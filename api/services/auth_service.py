@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.auth import Token, TokenData
 from models.user import User, UserInDB
 from services.user_service import UserService
+from services.token_blacklist import TokenBlacklistService
 from utils.security import verify_password
 from config import settings
 
@@ -12,6 +13,7 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.user_service = UserService(db)
+        self.token_blacklist = TokenBlacklistService(db)
 
     async def authenticate_user(self, email: str, password: str) -> User | None:
         user = await self.user_service.get_user_by_email(email)
@@ -46,6 +48,15 @@ class AuthService:
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+        # Check if token is blacklisted
+        if await self.token_blacklist.is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         try:
             payload = jwt.decode(
                 token, 
@@ -63,3 +74,6 @@ class AuthService:
         if user is None:
             raise credentials_exception
         return user 
+
+    async def logout(self, token: str) -> None:
+        await self.token_blacklist.blacklist_token(token) 

@@ -27,4 +27,10 @@ class AuthController:
             expires_delta=access_token_expires
         )
         
-        return Token(access_token=access_token, token_type="bearer") 
+        return Token(access_token=access_token, token_type="bearer")
+
+    @staticmethod
+    async def logout(token: str, db: AsyncSession) -> dict:
+        auth_service = AuthService(db)
+        await auth_service.logout(token)
+        return {"message": "Successfully logged out"} 
