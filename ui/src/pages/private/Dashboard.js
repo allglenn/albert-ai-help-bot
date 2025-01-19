@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Typography, Button, Box, Paper, Grid, Avatar, Divider, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PrivateLayout from '../../components/layout/PrivateLayout';
-import { AccountCircle, Chat as ChatIcon, Settings as SettingsIcon } from '@mui/icons-material';
+import { AccountCircle, Chat as ChatIcon, Settings as SettingsIcon, Person as PersonIcon } from '@mui/icons-material';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -113,8 +113,22 @@ const Dashboard = () => {
                     <Grid item xs={12} md={8}>
                         <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
                             <Typography variant="h6" gutterBottom>
-                                Quick Actions
+                                Your AI Assistant
                             </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                                <Avatar
+                                    src="https://randomuser.me/api/portraits/women/3.jpg"
+                                    sx={{ width: 60, height: 60, mr: 2 }}
+                                />
+                                <Box>
+                                    <Typography variant="h6">
+                                        Sophie
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">
+                                        Your dedicated AI assistant
+                                    </Typography>
+                                </Box>
+                            </Box>
                             <Grid container spacing={2}>
                                 <Grid item xs={12}>
                                     <Button
@@ -128,20 +142,47 @@ const Dashboard = () => {
                                         Start New Chat
                                     </Button>
                                 </Grid>
-                                {/* Add more quick actions here */}
                             </Grid>
                         </Paper>
                     </Grid>
 
-                    {/* Recent Activity or Stats could go here */}
+                    {/* Recent Activity Section */}
                     <Grid item xs={12}>
                         <Paper elevation={3} sx={{ p: 3 }}>
                             <Typography variant="h6" gutterBottom>
-                                Recent Activity
+                                Available Assistants
                             </Typography>
-                            <Typography variant="body2" color="textSecondary">
-                                Your recent interactions will appear here.
-                            </Typography>
+                            <Grid container spacing={2}>
+                                {[1, 2, 3].map((index) => (
+                                    <Grid item xs={12} md={4} key={index}>
+                                        <Paper
+                                            elevation={2}
+                                            sx={{
+                                                p: 2,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                cursor: 'pointer',
+                                                '&:hover': {
+                                                    bgcolor: 'action.hover'
+                                                }
+                                            }}
+                                        >
+                                            <Avatar
+                                                src={`https://randomuser.me/api/portraits/${index % 2 ? 'women' : 'men'}/${index * 10}.jpg`}
+                                                sx={{ width: 50, height: 50, mr: 2 }}
+                                            />
+                                            <Box>
+                                                <Typography variant="subtitle1">
+                                                    {index % 2 ? 'Emma' : 'James'} #{index}
+                                                </Typography>
+                                                <Typography variant="body2" color="textSecondary">
+                                                    Specialist in {index % 2 ? 'Documentation' : 'Technical Support'}
+                                                </Typography>
+                                            </Box>
+                                        </Paper>
+                                    </Grid>
+                                ))}
+                            </Grid>
                         </Paper>
                     </Grid>
                 </Grid>

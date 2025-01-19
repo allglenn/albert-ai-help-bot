@@ -8,6 +8,7 @@ from services.monitoring import MonitoringService
 import asyncio
 from prometheus_client import generate_latest
 from fastapi.responses import Response
+from views import help_assistant
 
 app = FastAPI(title="Albert AI Integration Demo", version="1.0.0", description="This is a demo application that demonstrates the integration of Albert AI, a French government initiative that provides state agencies with access to open-source AI models. Albert AI is designed to democratize access to artificial intelligence technologies within French public services. This project showcases how public services can integrate with Albert AI's APIs using a modern web stack. It provides a simple interface to interact with AI services while following French government security and accessibility guidelines.")
 
@@ -41,4 +42,5 @@ async def metrics():
 
 # Include routers
 app.include_router(auth_views.router, prefix="/api/v1")
-app.include_router(user_views.router, prefix="/api/v1") 
+app.include_router(user_views.router, prefix="/api/v1")
+app.include_router(help_assistant.router, prefix="/api/v1") 
