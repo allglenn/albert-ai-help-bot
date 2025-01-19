@@ -11,7 +11,8 @@ services:
       - ./api:/app
     environment:
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/albert_ai_db
+    env_file:
+      - ./api/.env
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - db
@@ -20,10 +21,8 @@ services:
     image: postgres:15
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=albert_ai_db
+    env_file:
+      - ./api/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
