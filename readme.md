@@ -126,15 +126,28 @@ project/
 │   │   └── exceptions.py    # Custom exceptions
 │   └── config.py            # Application configuration
 ├── ui/                      # React frontend
+│   └── src/
+│       ├── pages/
+│       │   ├── public/      # Public (unauthenticated) pages
+│       │   │   ├── LandingPage.js
+│       │   │   ├── LoginPage.js
+│       │   │   └── RegisterPage.js
+│       │   └── private/     # Protected (authenticated) pages
+│       │       ├── Dashboard.js
+│       │       ├── ChatPage.js
+│       │       └── ProfilePage.js
+│       ├── components/
+│       │   └── layout/      # Layout components
+│       │       ├── PublicLayout.js
+│       │       ├── PrivateLayout.js
+│       │       └── Navbar.js
+│       └── App.js
 ├── prometheus/              # Prometheus configuration
 │   └── prometheus.yml       # Scraping configuration
 ├── grafana/                 # Grafana configuration
 │   └── provisioning/        # Auto-provisioning
 │       ├── dashboards/      # Dashboard definitions
-│       │   ├── default.yml  # Dashboard provider config
-│       │   └── fastapi.json # FastAPI dashboard
 │       └── datasources/     # Data source definitions
-│           └── prometheus.yml # Prometheus data source
 └── docker-compose.yml       # Docker composition
 ```
 
