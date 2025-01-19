@@ -1,0 +1,139 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "title": "Total Requests",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(http_request_count_total)",
+          "legendFormat": "Total"
+        }
+      ]
+    },
+    {
+      "title": "Success Rate",
+      "type": "gauge",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "options": {
+        "maxValue": 100,
+        "minValue": 0,
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 80 },
+            { "color": "green", "value": 90 }
+          ]
+        }
+      },
+      "targets": [
+        {
+          "expr": "(sum(http_request_count_total{status=~\"2..\"})/sum(http_request_count_total)) * 100",
+          "legendFormat": "Success Rate"
+        }
+      ]
+    },
+    {
+      "title": "Requests by Status Code",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (status) (http_request_count_total)",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "title": "Request Rate by Endpoint",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (endpoint) (rate(http_request_count_total[1m]))",
+          "legendFormat": "{{endpoint}}"
+        }
+      ]
+    },
+    {
+      "title": "Response Time by Endpoint",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_sum[1m]) / rate(http_request_duration_seconds_count[1m])",
+          "legendFormat": "{{endpoint}}"
+        }
+      ]
+    },
+    {
+      "title": "System Metrics",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "targets": [
+        {
+          "expr": "process_cpu_percent",
+          "legendFormat": "CPU %"
+        },
+        {
+          "expr": "process_memory_bytes / 1024 / 1024",
+          "legendFormat": "Memory (MB)"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "FastAPI Monitoring",
+  "version": 1,
+  "weekStart": ""
+} 

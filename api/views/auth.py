@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, Response
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.auth import Token, LoginRequest
@@ -6,6 +6,8 @@ from models.user import User
 from controllers.auth import AuthController
 from services.auth_service import AuthService
 from db.database import get_db
+import asyncio
+import random
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -40,4 +42,28 @@ async def logout(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ):
-    return await AuthController.logout(token, db) 
+    return await AuthController.logout(token, db)
+
+@router.get("/test-metrics")
+async def test_metrics():
+    """Endpoint to generate test metrics"""
+    # Simulate work with random delay
+    delay = random.uniform(0.1, 0.5)
+    await asyncio.sleep(delay)
+    
+    # Randomly generate different responses
+    rand = random.random()
+    if rand < 0.6:  # 60% success
+        return {"message": "Success", "delay": delay}
+    elif rand < 0.8:  # 20% client error
+        return Response(
+            status_code=400,
+            content='{"error": "Bad Request"}',
+            media_type="application/json"
+        )
+    else:  # 20% server error
+        return Response(
+            status_code=500,
+            content='{"error": "Internal Server Error"}',
+            media_type="application/json"
+        ) 

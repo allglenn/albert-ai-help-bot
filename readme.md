@@ -1,5 +1,19 @@
 # Albert AI Integration Demo
 
+## Table of Contents
+- [About the Project](#about-the-project)
+- [Technical Stack](#technical-stack)
+- [Features](#features)
+- [Monitoring](#monitoring)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Development](#development)
+- [API Documentation](#api-documentation)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
 ## About the Project
 
 This project serves as a demonstration of integrating Albert AI, a French government initiative that provides state agencies access to open-source AI models. Albert AI is part of France's strategy to democratize AI usage within public services while maintaining data sovereignty and promoting open-source solutions.
@@ -20,47 +34,108 @@ This project serves as a demonstration of integrating Albert AI, a French govern
 - **React Hooks**: For state management and side effects
 - **Fetch API**: For making HTTP requests to the backend
 
-### Infrastructure
-- **Docker**: Containerization of both frontend and backend services
-- **Docker Compose**: For orchestrating the multi-container application
-- **Hot Reloading**: Supported for both frontend and backend development
+### Infrastructure & Monitoring
+- **Docker**: Containerization of all services
+- **Docker Compose**: Multi-container orchestration
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Metrics visualization and dashboards
+- **Hot Reloading**: Development environment support
 
 ## Features
 
-### Authentication
+### Core Features
+#### Authentication
 - Secure JWT-based authentication
 - Token blacklisting for logout functionality
 - Password hashing with bcrypt
 - Protected routes with dependency injection
 - Automatic token expiration
 
-### User Management
+#### User Management
 - User registration with email validation
 - Secure password storage
 - User profile retrieval
 - Email uniqueness enforcement
 - Active/inactive user status
 
-### Database
+#### Database
 - PostgreSQL integration
 - Async database operations
 - Migration support
 - Token blacklist management
 - Automatic cleanup of expired tokens
 
+### Monitoring Features
+
+The application includes comprehensive monitoring using Prometheus and Grafana:
+
+![Monitoring Dashboard](monitoringscren.png)
+
+#### Metrics Collection
+- **Request Metrics**
+  - Total request count
+  - Request rate by endpoint
+  - Success/Error rates
+  - Status code distribution
+  - Response times
+
+- **System Metrics**
+  - CPU usage
+  - Memory consumption
+
+#### Dashboard Panels
+1. **Total Requests**: Counter showing all API requests
+2. **Success Rate**: Gauge showing percentage of successful requests
+3. **Status Code Distribution**: Pie chart of response status codes
+4. **Request Rate**: Time series of requests per endpoint
+5. **Response Time**: Average response time by endpoint
+6. **System Resources**: CPU and Memory usage trends
+
+#### Monitoring Setup
+```bash
+# Start the full stack including monitoring
+docker-compose up -d
+
+# Access monitoring interfaces
+Grafana: http://localhost:3001 (admin/admin)
+Prometheus: http://localhost:9090
+```
+
+#### Test Endpoints
+```bash
+# Generate sample metrics
+curl http://localhost:8000/api/v1/auth/test-metrics
+
+# View raw metrics
+curl http://localhost:8000/metrics
+```
+
 ## Project Structure
 ```
 project/
-├── api/                 # FastAPI backend
-│   ├── controllers/     # Business logic
-│   ├── models/         # Pydantic models
-│   ├── services/       # Service layer
-│   ├── views/          # API endpoints
-│   ├── db/             # Database models and config
-│   ├── utils/          # Utility functions
-│   └── config.py       # Application configuration
-├── ui/                 # React frontend
-└── docker-compose.yml  # Docker composition
+├── api/                      # FastAPI backend
+│   ├── controllers/          # Business logic
+│   ├── models/              # Pydantic models
+│   ├── services/            # Service layer
+│   │   └── monitoring.py    # Metrics collection service
+│   ├── views/               # API endpoints
+│   ├── middleware/          # Middleware components
+│   │   └── error_handler.py # Global error handling
+│   ├── db/                  # Database models and config
+│   ├── utils/               # Utility functions
+│   │   └── exceptions.py    # Custom exceptions
+│   └── config.py            # Application configuration
+├── ui/                      # React frontend
+├── prometheus/              # Prometheus configuration
+│   └── prometheus.yml       # Scraping configuration
+├── grafana/                 # Grafana configuration
+│   └── provisioning/        # Auto-provisioning
+│       ├── dashboards/      # Dashboard definitions
+│       │   ├── default.yml  # Dashboard provider config
+│       │   └── fastapi.json # FastAPI dashboard
+│       └── datasources/     # Data source definitions
+│           └── prometheus.yml # Prometheus data source
+└── docker-compose.yml       # Docker composition
 ```
 
 ## Getting Started
@@ -87,27 +162,9 @@ docker-compose up --build
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
 
-## API Endpoints
-
-### Authentication
-- `POST /api/v1/auth/login`: JSON login endpoint
-- `POST /api/v1/auth/token`: Form-based login endpoint
-- `POST /api/v1/auth/logout`: Logout and invalidate token
-
-### Users
-- `POST /api/v1/users/`: Create new user
-- `GET /api/v1/users/me`: Get current user profile
-- `GET /api/v1/users/{user_id}`: Get user by ID
-
 ## Development
 
-The project is configured for an optimal development experience:
-- Frontend changes are automatically reflected thanks to React's development server
-- Backend changes trigger automatic reloads through Uvicorn's reload feature
-- Docker volumes ensure persistent development without rebuilding containers
-- PostgreSQL data persists across container restarts
-
-### Environment Variables
+### Environment Setup
 
 Key environment variables (see .env.example for full list):
 - `DATABASE_URL`: PostgreSQL connection string
@@ -115,8 +172,31 @@ Key environment variables (see .env.example for full list):
 - `ALBERT_AI_API_KEY`: API key for Albert AI services
 - `DEBUG`: Enable/disable debug mode
 
-## Security Features
+### Development Features
+- Frontend hot reloading
+- Backend auto-reload
+- Docker volume persistence
+- Database persistence
 
+### Configuration Files
+- `prometheus/prometheus.yml`: Prometheus scraping configuration
+- `grafana/provisioning/`: Grafana dashboards and data sources
+- `api/services/monitoring.py`: Metrics collection setup
+- `.env.example`: Environment variable template
+
+## API Documentation
+
+### Authentication Endpoints
+- `POST /api/v1/auth/login`: JSON login endpoint
+- `POST /api/v1/auth/token`: Form-based login endpoint
+- `POST /api/v1/auth/logout`: Logout and invalidate token
+
+### User Endpoints
+- `POST /api/v1/users/`: Create new user
+- `GET /api/v1/users/me`: Get current user profile
+- `GET /api/v1/users/{user_id}`: Get user by ID
+
+## Security
 - Password hashing with bcrypt
 - JWT token-based authentication
 - Token blacklisting for secure logout
