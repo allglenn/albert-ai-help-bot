@@ -1,35 +1,76 @@
 # Albert AI Integration Demo
 
-## Overview
-This project demonstrates the integration of Albert AI, a French government initiative that provides state agencies with access to open-source AI models. Albert AI is designed to democratize access to artificial intelligence technologies within French public services.
+## About the Project
 
-## Project Description
-This demonstration project showcases how public services can integrate with Albert AI's APIs using a modern web stack. It provides a simple interface to interact with AI services while following French government security and accessibility guidelines.
+This project serves as a demonstration of integrating Albert AI, a French government initiative that provides state agencies access to open-source AI models. Albert AI is part of France's strategy to democratize AI usage within public services while maintaining data sovereignty and promoting open-source solutions.
 
 ## Technical Stack
 
-### Frontend
-- **React 18**: Modern JavaScript library for building user interfaces
-- **Node.js**: Runtime environment for development
-- **Docker**: Containerization for consistent development and deployment
-- Hot-reloading enabled for rapid development
-
-### Backend
-- **FastAPI**: Modern, fast Python web framework
+### Backend (API)
+- **FastAPI**: Modern, fast (high-performance) web framework for building APIs with Python
 - **Pydantic**: Data validation using Python type annotations
-- **Uvicorn**: ASGI server for Python web applications
-- Hot-reloading enabled for rapid development
+- **Uvicorn**: Lightning-fast ASGI server implementation
+- **Python 3.11**: Latest stable version with improved performance
+
+### Frontend (UI)
+- **React 18**: JavaScript library for building user interfaces
+- **React Hooks**: For state management and side effects
+- **Fetch API**: For making HTTP requests to the backend
 
 ### Infrastructure
-- **Docker Compose**: Multi-container orchestration
-- **CORS**: Configured for secure cross-origin requests
-- **Nginx**: (Production only) Reverse proxy and static file serving
+- **Docker**: Containerization of both frontend and backend services
+- **Docker Compose**: For orchestrating the multi-container application
+- **Hot Reloading**: Supported for both frontend and backend development
 
 ## Getting Started
 
-### Prerequisites
-- Docker and Docker Compose installed
-- Git for version control
-
-### Installation
 1. Clone the repository:
+```bash
+git clone https://github.com/allglenn/albert-ai-help-bot.git
+cd albert-ai-help-bot
+```
+
+2. Create a .env file (optional):
+```bash
+cp .env.example .env
+# Edit .env with your Albert AI credentials
+```
+
+3. Start the application:
+```bash
+docker-compose up --build
+```
+
+4. Access the application:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+
+## Development
+
+The project is configured for an optimal development experience:
+- Frontend changes are automatically reflected thanks to React's development server
+- Backend changes trigger automatic reloads through Uvicorn's reload feature
+- Docker volumes ensure persistent development without rebuilding containers
+
+## Integration with Albert AI
+
+This demonstration project showcases how to:
+- Connect to Albert AI's API endpoints
+- Handle authentication and authorization
+- Process AI model responses
+- Present results through a modern web interface
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+- Albert AI team for providing the API infrastructure
+- French government's digital services for promoting open-source AI solutions
+
