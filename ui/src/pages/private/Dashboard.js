@@ -8,7 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import PrivateLayout from '../../components/layout/PrivateLayout';
 import {
     AccountCircle, Chat as ChatIcon, Settings as SettingsIcon,
-    Add as AddIcon, Link as LinkIcon, Delete as DeleteIcon, Edit as EditIcon
+    Add as AddIcon, Link as LinkIcon, Delete as DeleteIcon, Edit as EditIcon,
+    Visibility as VisibilityIcon
 } from '@mui/icons-material';
 
 const Dashboard = () => {
@@ -218,54 +219,8 @@ const Dashboard = () => {
                 </Paper>
 
                 <Grid container spacing={4}>
-                    {/* User Profile Section */}
-                    <Grid item xs={12} md={4}>
-                        <Card elevation={3}>
-                            <CardContent>
-                                <Box sx={{ textAlign: 'center', mb: 3 }}>
-                                    <Avatar
-                                        sx={{
-                                            width: 100,
-                                            height: 100,
-                                            mx: 'auto',
-                                            mb: 2,
-                                            bgcolor: 'secondary.main'
-                                        }}
-                                    >
-                                        <AccountCircle sx={{ fontSize: 60 }} />
-                                    </Avatar>
-                                    <Typography variant="h5" gutterBottom>
-                                        {userData?.full_name}
-                                    </Typography>
-                                    <Typography color="textSecondary" gutterBottom>
-                                        {userData?.email}
-                                    </Typography>
-                                    <Box sx={{
-                                        display: 'inline-block',
-                                        px: 2,
-                                        py: 0.5,
-                                        borderRadius: 1,
-                                        bgcolor: userData?.is_active ? 'success.light' : 'error.light',
-                                        color: userData?.is_active ? 'success.dark' : 'error.dark',
-                                        mb: 2
-                                    }}>
-                                        {userData?.is_active ? "Active" : "Inactive"}
-                                    </Box>
-                                </Box>
-                                <Button
-                                    fullWidth
-                                    variant="outlined"
-                                    onClick={() => navigate('/profile')}
-                                    startIcon={<SettingsIcon />}
-                                >
-                                    Manage Profile
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-
-                    {/* Assistants Grid */}
-                    <Grid item xs={12} md={8}>
+                    {/* Assistants Grid - Full Width */}
+                    <Grid item xs={12}>
                         <Typography variant="h5" gutterBottom sx={{ px: 1 }}>
                             Your AI Assistants
                         </Typography>
@@ -335,14 +290,12 @@ const Dashboard = () => {
                                                 >
                                                     <EditIcon />
                                                 </IconButton>
-                                                <Button
-                                                    variant="contained"
-                                                    startIcon={<ChatIcon />}
+                                                <IconButton
                                                     color="primary"
-                                                    onClick={() => navigate(`/chat/${assistant.id}`)}
+                                                    onClick={() => navigate(`/assistant/${assistant.id}`)}
                                                 >
-                                                    Start Chat
-                                                </Button>
+                                                    <VisibilityIcon />
+                                                </IconButton>
                                             </Grid>
                                         </Grid>
                                     </Paper>

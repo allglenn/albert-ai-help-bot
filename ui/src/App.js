@@ -12,6 +12,7 @@ import RegisterPage from './pages/public/RegisterPage';
 import Dashboard from './pages/private/Dashboard';
 import ChatPage from './pages/private/ChatPage';
 import ProfilePage from './pages/private/ProfilePage';
+import ShowAssistantPage from './pages/private/ShowAssistantPage';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -82,6 +83,7 @@ function App() {
                             <ProfilePage />
                         </ProtectedRoute>
                     } />
+                    <Route path="/assistant/:id" element={<ShowAssistantPage />} />
 
                     {/* Catch all route */}
                     <Route path="*" element={<Navigate to="/" />} />
