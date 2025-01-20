@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from db.database import get_db
@@ -6,6 +6,8 @@ from models.help_assistant import HelpAssistant, HelpAssistantCreate, HelpAssist
 from controllers.help_assistant import HelpAssistantController
 from views.auth import get_current_user
 from models.user import User
+from models.assistant_file import AssistantFile
+from services.file_service import FileService
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 
@@ -57,4 +59,47 @@ async def delete_help_assistant(
     if help_assistant.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this help assistant")
     await HelpAssistantController.delete_help_assistant(help_assistant_id, db)
-    return {"message": "Assistant deleted successfully"} 
+    return {"message": "Assistant deleted successfully"}
+
+@router.post("/{help_assistant_id}/files", response_model=AssistantFile)
+async def upload_file(
+    help_assistant_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Check if user owns the assistant
+    help_assistant = await HelpAssistantController.get_help_assistant(help_assistant_id, db)
+    if help_assistant.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to upload files to this assistant")
+
+    file_service = FileService(db)
+    return await file_service.save_file(file, help_assistant_id)
+
+@router.get("/{help_assistant_id}/files", response_model=List[AssistantFile])
+async def get_assistant_files(
+    help_assistant_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    help_assistant = await HelpAssistantController.get_help_assistant(help_assistant_id, db)
+    if help_assistant.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view these files")
+
+    file_service = FileService(db)
+    return await file_service.get_assistant_files(help_assistant_id)
+
+@router.delete("/{help_assistant_id}/files/{file_id}")
+async def delete_file(
+    help_assistant_id: int,
+    file_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    help_assistant = await HelpAssistantController.get_help_assistant(help_assistant_id, db)
+    if help_assistant.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this file")
+
+    file_service = FileService(db)
+    await file_service.delete_file(file_id)
+    return {"message": "File deleted successfully"} 

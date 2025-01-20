@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, Enum
 from sqlalchemy.ext.declarative import declarative_base
 import enum
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -54,3 +55,14 @@ class HelpAssistant(Base):
             self.authorizations = ""
         else:
             self.authorizations = ','.join(auth.value for auth in auths)
+
+class AssistantFile(Base):
+    __tablename__ = "assistant_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    file_path = Column(String, nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    help_assistant_id = Column(Integer, ForeignKey("help_assistant.id", ondelete="CASCADE"))

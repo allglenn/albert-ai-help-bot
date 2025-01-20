@@ -7,6 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - ./api:/app
+      - ./api/uploads:/app/uploads
     environment:
       - PYTHONUNBUFFERED=1
     env_file:

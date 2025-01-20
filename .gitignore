@@ -57,4 +57,9 @@ logs/
 
 # System Files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Uploads directory
+api/uploads/
+uploads/
+**/uploads/ 
