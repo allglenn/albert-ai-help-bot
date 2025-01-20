@@ -45,4 +45,16 @@ async def update_help_assistant(
     help_assistant = await HelpAssistantController.get_help_assistant(help_assistant_id, db)
     if help_assistant.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to modify this help assistant")
-    return await HelpAssistantController.update_help_assistant(help_assistant_id, help_assistant_update, db) 
+    return await HelpAssistantController.update_help_assistant(help_assistant_id, help_assistant_update, db)
+
+@router.delete("/{help_assistant_id}")
+async def delete_help_assistant(
+    help_assistant_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    help_assistant = await HelpAssistantController.get_help_assistant(help_assistant_id, db)
+    if help_assistant.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this help assistant")
+    await HelpAssistantController.delete_help_assistant(help_assistant_id, db)
+    return {"message": "Assistant deleted successfully"} 

@@ -27,6 +27,16 @@ class HelpAssistantBase(BaseModel):
             return f"https://randomuser.me/api/portraits/{gender}/{number}.jpg"
         return v
 
+    @validator('authorizations', pre=True)
+    def split_authorizations(cls, v):
+        if isinstance(v, str):
+            # Handle empty string
+            if not v:
+                return []
+            # Split string and convert to Authorization enum
+            return [Authorization(auth.strip()) for auth in v.split(',')]
+        return v
+
 class HelpAssistantCreate(HelpAssistantBase):
     pass
 
