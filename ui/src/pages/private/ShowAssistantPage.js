@@ -23,6 +23,23 @@ import {
     Description as DescriptionIcon
 } from '@mui/icons-material';
 
+// Add debounce hook at the top of the file
+const useDebounce = (value, delay) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
+};
+
 const ShowAssistantPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -42,6 +59,7 @@ const ShowAssistantPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [searching, setSearching] = useState(false);
+    const debouncedSearchQuery = useDebounce(searchQuery, 500); // 500ms delay
 
     const fetchFiles = async () => {
         try {
@@ -105,38 +123,46 @@ const ShowAssistantPage = () => {
         }
     };
 
-    const handleSearch = async () => {
-        if (!searchQuery.trim()) return;
+    // Remove handleSearch function and use useEffect instead
+    useEffect(() => {
+        const performSearch = async () => {
+            if (!debouncedSearchQuery.trim()) {
+                setSearchResults([]);
+                return;
+            }
 
-        setSearching(true);
-        try {
-            const response = await fetch(
-                `http://localhost:8000/api/v1/help-assistant/${id}/agent/search`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ query: searchQuery })
-                }
-            );
+            setSearching(true);
+            try {
+                const response = await fetch(
+                    `http://localhost:8000/api/v1/help-assistant/${id}/agent/search`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ query: debouncedSearchQuery })
+                    }
+                );
 
-            if (!response.ok) throw new Error('Search failed');
+                if (!response.ok) throw new Error('Search failed');
 
-            const data = await response.json();
-            setSearchResults(data.results);
+                const data = await response.json();
+                setSearchResults(data.results);
 
-        } catch (err) {
-            setSnackbar({
-                open: true,
-                message: 'Search failed: ' + err.message,
-                severity: 'error'
-            });
-        } finally {
-            setSearching(false);
-        }
-    };
+            } catch (err) {
+                setSnackbar({
+                    open: true,
+                    message: 'Search failed: ' + err.message,
+                    severity: 'error'
+                });
+            } finally {
+                setSearching(false);
+            }
+        };
+
+        performSearch();
+    }, [debouncedSearchQuery, id, token]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -515,16 +541,15 @@ const ShowAssistantPage = () => {
                                     label="Search Query"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                    InputProps={{
+                                        endAdornment: searching && (
+                                            <CircularProgress
+                                                size={20}
+                                                sx={{ mr: 1 }}
+                                            />
+                                        )
+                                    }}
                                 />
-                                <Button
-                                    variant="contained"
-                                    onClick={handleSearch}
-                                    disabled={searching}
-                                    startIcon={searching ? <CircularProgress size={20} /> : <SearchIcon />}
-                                >
-                                    Search
-                                </Button>
                             </Box>
 
                             {searchResults.length > 0 && (
