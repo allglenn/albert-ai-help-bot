@@ -182,10 +182,10 @@ const ShowAssistantPage = () => {
         }
     };
 
-    // Add helper function to format collection ID
-    const formatCollectionId = (id) => {
+    // Add helper function to format IDs
+    const formatId = (id) => {
         if (!id) return '';
-        return `${id.slice(-4)}`;
+        return id.slice(-4);
     };
 
     if (loading) {
@@ -322,7 +322,7 @@ const ShowAssistantPage = () => {
                                     Collection ID
                                 </Typography>
                                 <Typography>
-                                    {formatCollectionId(collection.albert_id)}
+                                    {formatId(collection.albert_id)}
                                 </Typography>
                             </Box>
                             <Box sx={{ mb: 2 }}>
@@ -376,10 +376,18 @@ const ShowAssistantPage = () => {
                                     secondary={
                                         <>
                                             Type: {file.file_type} • Size: {(file.file_size / 1024).toFixed(2)} KB
-                                            {file.assistant_collection_id && (
+                                            {(file.assistant_collection_id || file.albert_ai_id) && (
                                                 <>
                                                     <br />
-                                                    Collection: {formatCollectionId(file.assistant_collection_id)}
+                                                    {file.assistant_collection_id && (
+                                                        <>Collection: {formatId(file.assistant_collection_id)}</>
+                                                    )}
+                                                    {file.assistant_collection_id && file.albert_ai_id && (
+                                                        <> • </>
+                                                    )}
+                                                    {file.albert_ai_id && (
+                                                        <>Doc: {formatId(file.albert_ai_id)}</>
+                                                    )}
                                                 </>
                                             )}
                                         </>

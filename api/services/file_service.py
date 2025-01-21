@@ -102,8 +102,24 @@ class FileService:
         db_file = result.scalar_one_or_none()
         
         if db_file:
-            # Delete physical file
-            os.remove(db_file.file_path)
-            # Delete database record
-            await self.db.delete(db_file)
-            await self.db.commit() 
+            try:
+                # Delete from Albert AI if it exists there
+                if db_file.assistant_collection_id and db_file.albert_ai_id:
+                    try:
+                        await self.albert_service.delete_document(
+                            collection_id=db_file.assistant_collection_id,
+                            document_id=db_file.albert_ai_id
+                        )
+                    except Exception as e:
+                        # Log error but continue with local deletion
+                        print(f"Failed to delete file from Albert AI: {str(e)}")
+
+                # Delete physical file
+                os.remove(db_file.file_path)
+                # Delete database record
+                await self.db.delete(db_file)
+                await self.db.commit()
+                
+            except Exception as e:
+                await self.db.rollback()
+                raise ValueError(f"Failed to delete file: {str(e)}") 
