@@ -182,6 +182,12 @@ const ShowAssistantPage = () => {
         }
     };
 
+    // Add helper function to format collection ID
+    const formatCollectionId = (id) => {
+        if (!id) return '';
+        return `${id.slice(-4)}`;
+    };
+
     if (loading) {
         return (
             <PrivateLayout>
@@ -315,7 +321,9 @@ const ShowAssistantPage = () => {
                                 <Typography variant="subtitle1" color="text.secondary">
                                     Collection ID
                                 </Typography>
-                                <Typography>{collection.albert_id}</Typography>
+                                <Typography>
+                                    {formatCollectionId(collection.albert_id)}
+                                </Typography>
                             </Box>
                             <Box sx={{ mb: 2 }}>
                                 <Typography variant="subtitle1" color="text.secondary">
@@ -371,7 +379,7 @@ const ShowAssistantPage = () => {
                                             {file.assistant_collection_id && (
                                                 <>
                                                     <br />
-                                                    Collection: {file.assistant_collection_id}
+                                                    Collection: {formatCollectionId(file.assistant_collection_id)}
                                                 </>
                                             )}
                                         </>
