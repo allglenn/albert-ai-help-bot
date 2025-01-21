@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Dict, Any
 from db.database import get_db
 from models.help_assistant import HelpAssistant, HelpAssistantCreate, HelpAssistantUpdate
 from controllers.help_assistant import HelpAssistantController
@@ -11,6 +11,7 @@ from services.file_service import FileService
 from services.external_api import AlbertAIService
 from models.collection import Collection
 from services.collection_service import CollectionService
+from tools.collection_tool import CollectionTool
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 
@@ -28,6 +29,7 @@ async def get_my_help_assistants(
     db: AsyncSession = Depends(get_db)
 ):
     return await HelpAssistantController.get_user_help_assistants(current_user.id, db)
+
 @router.get("/models")
 async def list_models():
     ai_service = AlbertAIService()
@@ -124,4 +126,45 @@ async def get_assistant_collection(
     
     collection_service = CollectionService(db)
     return await collection_service.get_by_help_assistant(help_assistant_id)
+
+@router.post("/{assistant_id}/agent/search", response_model=Dict[str, Any])
+async def agent_search(
+    assistant_id: int,
+    query: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Search assistant's collection using AI agent
+    """
+    try:
+        # Get collection for the assistant
+        collection_service = CollectionService(db)
+        collection = await collection_service.get_by_help_assistant(assistant_id)
+        
+        if not collection:
+            raise HTTPException(
+                status_code=404,
+                detail="No collection found for this assistant"
+            )
+
+        # Initialize tools
+        albert_service = AlbertAIService()
+        collection_tool = CollectionTool(albert_service)
+        
+        # Search collection
+        search_results = await collection_tool.search_collection(
+            collection_id=collection.albert_id,
+            query=query["query"]
+        )
+        
+        return {
+            "results": search_results,
+            "collection_id": collection.albert_id
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to search collection: {str(e)}"
+        )
 

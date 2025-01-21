@@ -4,7 +4,7 @@ import {
     CircularProgress, Grid, IconButton, Link, List,
     ListItem, ListItemText, ListItemSecondary, ListItemIcon,
     Dialog, DialogTitle, DialogContent, DialogActions,
-    Alert, Snackbar
+    Alert, Snackbar, TextField
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import PrivateLayout from '../../components/layout/PrivateLayout';
@@ -17,6 +17,7 @@ import {
     Delete as DeleteIcon,
     Description as FileIcon,
     Info as InfoIcon,
+    Search as SearchIcon
 } from '@mui/icons-material';
 
 const ShowAssistantPage = () => {
@@ -35,6 +36,9 @@ const ShowAssistantPage = () => {
     const [loadingModels, setLoadingModels] = useState(false);
     const [collection, setCollection] = useState(null);
     const [loadingCollection, setLoadingCollection] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searching, setSearching] = useState(false);
 
     const fetchFiles = async () => {
         try {
@@ -95,6 +99,39 @@ const ShowAssistantPage = () => {
             });
         } finally {
             setLoadingCollection(false);
+        }
+    };
+
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) return;
+
+        setSearching(true);
+        try {
+            const response = await fetch(
+                `http://localhost:8000/api/v1/help-assistant/${id}/agent/search`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: searchQuery })
+                }
+            );
+
+            if (!response.ok) throw new Error('Search failed');
+
+            const data = await response.json();
+            setSearchResults(data.results);
+
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: 'Search failed: ' + err.message,
+                severity: 'error'
+            });
+        } finally {
+            setSearching(false);
         }
     };
 
@@ -188,6 +225,22 @@ const ShowAssistantPage = () => {
         return id.slice(-4);
     };
 
+    // Add helper function to highlight search terms
+    const highlightSearchTerm = (text, searchTerm) => {
+        if (!searchTerm) return text;
+
+        const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'));
+        return (
+            <>
+                {parts.map((part, i) =>
+                    part.toLowerCase() === searchTerm.toLowerCase() ?
+                        <strong key={i}>{part}</strong> :
+                        part
+                )}
+            </>
+        );
+    };
+
     if (loading) {
         return (
             <PrivateLayout>
@@ -212,7 +265,7 @@ const ShowAssistantPage = () => {
 
     return (
         <PrivateLayout>
-            <Container maxWidth="lg" sx={{ py: 4 }}>
+            <Container maxWidth="xl" sx={{ py: 4 }}>
                 <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
                     <IconButton onClick={() => navigate('/dashboard')}>
                         <ArrowBackIcon />
@@ -230,178 +283,234 @@ const ShowAssistantPage = () => {
                     </IconButton>
                 </Box>
 
-                <Paper elevation={3} sx={{ p: 4 }}>
-                    <Grid container spacing={4}>
-                        <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
-                            <Avatar
-                                src={assistant.operator_pic}
-                                sx={{ width: 200, height: 200, mx: 'auto', mb: 2 }}
-                            />
-                            <Typography variant="h5" gutterBottom>
-                                {assistant.operator_name}
-                            </Typography>
-                            <Button
-                                variant="contained"
-                                startIcon={<ChatIcon />}
-                                size="large"
-                                onClick={() => navigate(`/chat/${assistant.id}`)}
-                                sx={{ mt: 2 }}
-                            >
-                                Start Chat
-                            </Button>
-                        </Grid>
-
-                        <Grid item xs={12} md={8}>
-                            <Box sx={{ mb: 3 }}>
-                                <Typography variant="h6" gutterBottom>
-                                    {assistant.name}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                    <LinkIcon sx={{ mr: 1, fontSize: 16 }} />
-                                    <Link href={assistant.url} target="_blank" rel="noopener">
-                                        {assistant.url}
-                                    </Link>
-                                </Box>
-                            </Box>
-
-                            <Box sx={{ mb: 3 }}>
-                                <Typography variant="h6" gutterBottom>
-                                    Mission
-                                </Typography>
-                                <Typography>
-                                    {assistant.mission}
-                                </Typography>
-                            </Box>
-
-                            <Box sx={{ mb: 3 }}>
-                                <Typography variant="h6" gutterBottom>
-                                    Description
-                                </Typography>
-                                <Typography>
-                                    {assistant.description}
-                                </Typography>
-                            </Box>
-
-                            <Box>
-                                <Typography variant="h6" gutterBottom>
-                                    Authorizations
-                                </Typography>
-                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                    {assistant.authorizations.map((auth) => (
-                                        <Box
-                                            key={auth}
-                                            sx={{
-                                                px: 2,
-                                                py: 0.5,
-                                                borderRadius: 1,
-                                                bgcolor: 'primary.light',
-                                                color: 'primary.contrastText'
-                                            }}
-                                        >
-                                            {auth}
-                                        </Box>
-                                    ))}
-                                </Box>
-                            </Box>
-                        </Grid>
-                    </Grid>
-                </Paper>
-
-                <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-                    <Typography variant="h6" gutterBottom>
-                        Collection
-                    </Typography>
-                    {loadingCollection ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                            <CircularProgress />
-                        </Box>
-                    ) : collection ? (
-                        <Box>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="subtitle1" color="text.secondary">
-                                    Collection ID
-                                </Typography>
-                                <Typography>
-                                    {formatId(collection.albert_id)}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="subtitle1" color="text.secondary">
-                                    Created At
-                                </Typography>
-                                <Typography>
-                                    {new Date(collection.created_at).toLocaleString()}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    ) : (
-                        <Typography color="text.secondary" align="center">
-                            No collection found
-                        </Typography>
-                    )}
-                </Paper>
-
-                <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                        <Typography variant="h6">Files</Typography>
-                        <Button
-                            variant="contained"
-                            startIcon={<UploadIcon />}
-                            onClick={() => setUploadOpen(true)}
-                        >
-                            Upload File
-                        </Button>
-                    </Box>
-
-                    <List>
-                        {files.map((file) => (
-                            <ListItem
-                                key={file.id}
-                                secondaryAction={
-                                    <IconButton
-                                        edge="end"
-                                        aria-label="delete"
-                                        onClick={() => handleDeleteFile(file.id)}
-                                        color="error"
+                <Grid container spacing={3}>
+                    {/* Left Column - Profile, Collection, and Files */}
+                    <Grid item xs={12} md={8}>
+                        {/* Profile Card */}
+                        <Paper elevation={3} sx={{ p: 4, mb: 3 }}>
+                            <Grid container spacing={4}>
+                                <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+                                    <Avatar
+                                        src={assistant.operator_pic}
+                                        sx={{ width: 200, height: 200, mx: 'auto', mb: 2 }}
+                                    />
+                                    <Typography variant="h5" gutterBottom>
+                                        {assistant.operator_name}
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<ChatIcon />}
+                                        size="large"
+                                        onClick={() => navigate(`/chat/${assistant.id}`)}
+                                        sx={{ mt: 2 }}
                                     >
-                                        <DeleteIcon />
-                                    </IconButton>
-                                }
-                            >
-                                <ListItemIcon>
-                                    <FileIcon />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={file.filename}
-                                    secondary={
-                                        <>
-                                            Type: {file.file_type} • Size: {(file.file_size / 1024).toFixed(2)} KB
-                                            {(file.assistant_collection_id || file.albert_ai_id) && (
+                                        Start Chat
+                                    </Button>
+                                </Grid>
+
+                                <Grid item xs={12} md={8}>
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            {assistant.name}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                            <LinkIcon sx={{ mr: 1, fontSize: 16 }} />
+                                            <Link href={assistant.url} target="_blank" rel="noopener">
+                                                {assistant.url}
+                                            </Link>
+                                        </Box>
+                                    </Box>
+
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            Mission
+                                        </Typography>
+                                        <Typography>
+                                            {assistant.mission}
+                                        </Typography>
+                                    </Box>
+
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            Description
+                                        </Typography>
+                                        <Typography>
+                                            {assistant.description}
+                                        </Typography>
+                                    </Box>
+
+                                    <Box>
+                                        <Typography variant="h6" gutterBottom>
+                                            Authorizations
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                            {assistant.authorizations.map((auth) => (
+                                                <Box
+                                                    key={auth}
+                                                    sx={{
+                                                        px: 2,
+                                                        py: 0.5,
+                                                        borderRadius: 1,
+                                                        bgcolor: 'primary.light',
+                                                        color: 'primary.contrastText'
+                                                    }}
+                                                >
+                                                    {auth}
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        </Paper>
+
+                        {/* Collection Card */}
+                        <Paper elevation={3} sx={{ p: 4, mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Collection
+                            </Typography>
+                            {loadingCollection ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                    <CircularProgress />
+                                </Box>
+                            ) : collection ? (
+                                <Box>
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="subtitle1" color="text.secondary">
+                                            Collection ID
+                                        </Typography>
+                                        <Typography>
+                                            {formatId(collection.albert_id)}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="subtitle1" color="text.secondary">
+                                            Created At
+                                        </Typography>
+                                        <Typography>
+                                            {new Date(collection.created_at).toLocaleString()}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            ) : (
+                                <Typography color="text.secondary" align="center">
+                                    No collection found
+                                </Typography>
+                            )}
+                        </Paper>
+
+                        {/* Files Card */}
+                        <Paper elevation={3} sx={{ p: 4 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                                <Typography variant="h6">Files</Typography>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<UploadIcon />}
+                                    onClick={() => setUploadOpen(true)}
+                                >
+                                    Upload File
+                                </Button>
+                            </Box>
+
+                            <List>
+                                {files.map((file) => (
+                                    <ListItem
+                                        key={file.id}
+                                        secondaryAction={
+                                            <IconButton
+                                                edge="end"
+                                                aria-label="delete"
+                                                onClick={() => handleDeleteFile(file.id)}
+                                                color="error"
+                                            >
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        }
+                                    >
+                                        <ListItemIcon>
+                                            <FileIcon />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={file.filename}
+                                            secondary={
                                                 <>
-                                                    <br />
-                                                    {file.assistant_collection_id && (
-                                                        <>Collection: {formatId(file.assistant_collection_id)}</>
-                                                    )}
-                                                    {file.assistant_collection_id && file.albert_ai_id && (
-                                                        <> • </>
-                                                    )}
-                                                    {file.albert_ai_id && (
-                                                        <>Doc: {formatId(file.albert_ai_id)}</>
+                                                    Type: {file.file_type} • Size: {(file.file_size / 1024).toFixed(2)} KB
+                                                    {(file.assistant_collection_id || file.albert_ai_id) && (
+                                                        <>
+                                                            <br />
+                                                            {file.assistant_collection_id && (
+                                                                <>Collection: {formatId(file.assistant_collection_id)}</>
+                                                            )}
+                                                            {file.assistant_collection_id && file.albert_ai_id && (
+                                                                <> • </>
+                                                            )}
+                                                            {file.albert_ai_id && (
+                                                                <>Doc: {formatId(file.albert_ai_id)}</>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </>
-                                            )}
-                                        </>
-                                    }
-                                />
-                            </ListItem>
-                        ))}
-                        {files.length === 0 && (
-                            <Typography color="text.secondary" align="center">
-                                No files uploaded yet
+                                            }
+                                        />
+                                    </ListItem>
+                                ))}
+                                {files.length === 0 && (
+                                    <Typography color="text.secondary" align="center">
+                                        No files uploaded yet
+                                    </Typography>
+                                )}
+                            </List>
+                        </Paper>
+                    </Grid>
+
+                    {/* Right Column - Search */}
+                    <Grid item xs={12} md={4}>
+                        <Paper
+                            elevation={3}
+                            sx={{
+                                p: 4,
+                                position: { md: 'sticky' },
+                                top: { md: '24px' },
+                                maxHeight: { md: 'calc(100vh - 48px)' },
+                                overflowY: 'auto'
+                            }}
+                        >
+                            <Typography variant="h6" gutterBottom>
+                                Search in knowledge base
                             </Typography>
-                        )}
-                    </List>
-                </Paper>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Search Query"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                />
+                                <Button
+                                    variant="contained"
+                                    onClick={handleSearch}
+                                    disabled={searching}
+                                    startIcon={searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                                >
+                                    Search
+                                </Button>
+                            </Box>
+
+                            {searchResults.length > 0 && (
+                                <List>
+                                    {searchResults.map((result, index) => (
+                                        <ListItem key={index}>
+                                            <ListItemText
+                                                primary={`Result ${index + 1}`}
+                                                secondary={highlightSearchTerm(result, searchQuery)}
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            )}
+                        </Paper>
+                    </Grid>
+                </Grid>
 
                 <Dialog open={uploadOpen} onClose={() => setUploadOpen(false)}>
                     <DialogTitle>Upload File</DialogTitle>
