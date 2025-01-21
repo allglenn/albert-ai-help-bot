@@ -117,3 +117,95 @@ class AlbertAIService:
             )
             return response.json()
 
+    async def search_collection(self, collection_id: str, query: str, k: int = 6) -> List[str]:
+        """
+        Search a collection for relevant chunks based on a query.
+        
+        Args:
+            collection_id: The ID of the collection to search
+            query: The search query
+            k: Number of results to return (default: 5)
+            
+        Returns:
+            List of chunk contents from the search results
+        """
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/search",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "collections": [collection_id],
+                    "prompt": query,
+                    "k": k,
+                    "method": "semantic"
+                }
+            )
+            
+            if response.status_code == 200:
+                results = response.json()
+                return [result["chunk"]["content"] for result in results.get("data", [])]
+            else:
+                raise ValueError(f"Search failed with status {response.status_code}: {response.text}")
+
+    async def chat_with_context(self, collection_id: str, prompt: str) -> Dict[str, Any]:
+        """
+        Search collection for relevant chunks and use them to answer the prompt.
+        
+        Args:
+            collection_id: The ID of the collection to search
+            prompt: The user's question
+            
+        Returns:
+            Dict containing the response and source documents
+        """
+        async with httpx.AsyncClient() as client:
+            # Get relevant chunks using existing search method
+            search_results = await client.post(
+                f"{self.base_url}/search",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "collections": [collection_id],
+                    "prompt": prompt,
+                    "k": 6,
+                    "method": "semantic"
+                }
+            )
+            
+            results = search_results.json()
+            chunks = "\n\n\n".join([result["chunk"]["content"] for result in results["data"]])
+            sources = list({result["chunk"]["metadata"]["document_name"] for result in results["data"]})
+            
+            # Format prompt with context
+            prompt_template = "Réponds à la question suivante en te basant sur les documents ci-dessous : {prompt}\n\nDocuments :\n\n{chunks}"
+            context_prompt = prompt_template.format(prompt=prompt, chunks=chunks)
+            
+            # Get AI response
+            query_response = await client.post(
+                f"{self.base_url}/query",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "prompt": context_prompt,
+                    "model": self.llm_model
+                }
+            )
+            
+            if query_response.status_code != 200:
+                raise ValueError(f"Query failed with status {query_response.status_code}: {query_response.text}")
+            
+            response_data = query_response.json()
+            
+            return {
+                "response": response_data.get("text", ""),
+                "sources": sources,
+                "chunks": chunks
+            }
+
