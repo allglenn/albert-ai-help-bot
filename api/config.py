@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     # Albert AI settings
     ALBERT_AI_BASE_URL: str
     ALBERT_AI_API_KEY: str
+    ALBERT_AI_EMBEDDINGS_MODEL: str
+    ALBERT_AI_LLM_MODEL: str
     
     # Application settings
     DEBUG: bool = True

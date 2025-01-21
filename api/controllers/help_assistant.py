@@ -1,8 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from db.models import HelpAssistant as HelpAssistantDB
 from models.help_assistant import HelpAssistantCreate, HelpAssistantUpdate
 from fastapi import HTTPException
+from utils.exceptions import UserNotFoundException, EmailAlreadyExistsException
 
 class HelpAssistantController:
     @staticmethod
@@ -24,19 +26,23 @@ class HelpAssistantController:
         return db_help_assistant
 
     @staticmethod
-    async def get_help_assistant(help_assistant_id: int, db: AsyncSession):
+    async def get_help_assistant(help_assistant_id: int, db: AsyncSession) -> HelpAssistantDB:
         result = await db.execute(
-            select(HelpAssistantDB).filter(HelpAssistantDB.id == help_assistant_id)
+            select(HelpAssistantDB)
+            .options(selectinload(HelpAssistantDB.collection))
+            .filter(HelpAssistantDB.id == help_assistant_id)
         )
         help_assistant = result.scalar_one_or_none()
-        if not help_assistant:
-            raise HTTPException(status_code=404, detail="Help Assistant not found")
+        if help_assistant is None:
+            raise UserNotFoundException()
         return help_assistant
 
     @staticmethod
-    async def get_user_help_assistants(user_id: int, db: AsyncSession):
+    async def get_user_help_assistants(user_id: int, db: AsyncSession) -> list[HelpAssistantDB]:
         result = await db.execute(
-            select(HelpAssistantDB).filter(HelpAssistantDB.user_id == user_id)
+            select(HelpAssistantDB)
+            .options(selectinload(HelpAssistantDB.collection))
+            .filter(HelpAssistantDB.user_id == user_id)
         )
         return result.scalars().all()
 

@@ -15,7 +15,8 @@ import {
     ArrowBack as ArrowBackIcon,
     Upload as UploadIcon,
     Delete as DeleteIcon,
-    Description as FileIcon
+    Description as FileIcon,
+    Info as InfoIcon,
 } from '@mui/icons-material';
 
 const ShowAssistantPage = () => {
@@ -29,6 +30,11 @@ const ShowAssistantPage = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const token = localStorage.getItem('token');
+    const [modelsOpen, setModelsOpen] = useState(false);
+    const [models, setModels] = useState([]);
+    const [loadingModels, setLoadingModels] = useState(false);
+    const [collection, setCollection] = useState(null);
+    const [loadingCollection, setLoadingCollection] = useState(false);
 
     const fetchFiles = async () => {
         try {
@@ -45,6 +51,53 @@ const ShowAssistantPage = () => {
         }
     };
 
+    const fetchModels = async () => {
+        setLoadingModels(true);
+        try {
+            const response = await fetch('http://localhost:8000/api/v1/help-assistant/models', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            if (!response.ok) throw new Error('Failed to fetch models');
+            const data = await response.json();
+            setModels(data);
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: 'Failed to load models: ' + err.message,
+                severity: 'error'
+            });
+        } finally {
+            setLoadingModels(false);
+        }
+    };
+
+    const fetchCollection = async () => {
+        setLoadingCollection(true);
+        try {
+            const response = await fetch(
+                `http://localhost:8000/api/v1/help-assistant/${id}/collection`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                }
+            );
+            if (!response.ok) throw new Error('Failed to fetch collection');
+            const data = await response.json();
+            setCollection(data);
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: 'Failed to load collection: ' + err.message,
+                severity: 'error'
+            });
+        } finally {
+            setLoadingCollection(false);
+        }
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -58,6 +111,7 @@ const ShowAssistantPage = () => {
                 setAssistant(data);
 
                 await fetchFiles();
+                await fetchCollection();
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -158,6 +212,16 @@ const ShowAssistantPage = () => {
                         <ArrowBackIcon />
                     </IconButton>
                     <Typography variant="h4">Assistant Details</Typography>
+                    <IconButton
+                        color="primary"
+                        onClick={() => {
+                            setModelsOpen(true);
+                            fetchModels();
+                        }}
+                        sx={{ ml: 'auto' }}
+                    >
+                        <InfoIcon />
+                    </IconButton>
                 </Box>
 
                 <Paper elevation={3} sx={{ p: 4 }}>
@@ -238,6 +302,38 @@ const ShowAssistantPage = () => {
                 </Paper>
 
                 <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+                    <Typography variant="h6" gutterBottom>
+                        Collection
+                    </Typography>
+                    {loadingCollection ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : collection ? (
+                        <Box>
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="subtitle1" color="text.secondary">
+                                    Collection ID
+                                </Typography>
+                                <Typography>{collection.albert_id}</Typography>
+                            </Box>
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="subtitle1" color="text.secondary">
+                                    Created At
+                                </Typography>
+                                <Typography>
+                                    {new Date(collection.created_at).toLocaleString()}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    ) : (
+                        <Typography color="text.secondary" align="center">
+                            No collection found
+                        </Typography>
+                    )}
+                </Paper>
+
+                <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                         <Typography variant="h6">Files</Typography>
                         <Button
@@ -269,7 +365,17 @@ const ShowAssistantPage = () => {
                                 </ListItemIcon>
                                 <ListItemText
                                     primary={file.filename}
-                                    secondary={`Type: ${file.file_type} • Size: ${(file.file_size / 1024).toFixed(2)} KB`}
+                                    secondary={
+                                        <>
+                                            Type: {file.file_type} • Size: {(file.file_size / 1024).toFixed(2)} KB
+                                            {file.assistant_collection_id && (
+                                                <>
+                                                    <br />
+                                                    Collection: {file.assistant_collection_id}
+                                                </>
+                                            )}
+                                        </>
+                                    }
                                 />
                             </ListItem>
                         ))}
@@ -300,6 +406,56 @@ const ShowAssistantPage = () => {
                         >
                             Upload
                         </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={modelsOpen}
+                    onClose={() => setModelsOpen(false)}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle>Available AI Models</DialogTitle>
+                    <DialogContent>
+                        {loadingModels ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            <List>
+                                {models.map((model) => (
+                                    <ListItem key={model.id}>
+                                        <ListItemText
+                                            primary={model.id}
+                                            secondary={
+                                                <React.Fragment>
+                                                    <Typography component="span" variant="body2" color="text.primary">
+                                                        Type: {model.type}
+                                                    </Typography>
+                                                    <br />
+                                                    {model.max_context_length && (
+                                                        <>
+                                                            Max Context Length: {model.max_context_length}
+                                                            <br />
+                                                        </>
+                                                    )}
+                                                    Status: {model.status}
+                                                    {model.aliases?.length > 0 && (
+                                                        <>
+                                                            <br />
+                                                            Aliases: {model.aliases.join(', ')}
+                                                        </>
+                                                    )}
+                                                </React.Fragment>
+                                            }
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setModelsOpen(false)}>Close</Button>
                     </DialogActions>
                 </Dialog>
 

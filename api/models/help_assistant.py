@@ -2,6 +2,7 @@ from pydantic import BaseModel, validator
 from typing import List, Optional
 from enum import Enum
 import random
+from .collection import Collection
 
 class Authorization(str, Enum):
     CAN_SEND_EMAIL = "CAN_SEND_EMAIL"
@@ -48,6 +49,8 @@ class HelpAssistant(HelpAssistantBase):
     user_id: int
     message: Optional[str] = None
     response: Optional[str] = None
+    collection: Optional[Collection] = None
 
     class Config:
-        orm_mode = True 
+        from_attributes = True
+        arbitrary_types_allowed = True 

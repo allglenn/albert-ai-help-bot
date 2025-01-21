@@ -8,6 +8,9 @@ from views.auth import get_current_user
 from models.user import User
 from models.assistant_file import AssistantFile
 from services.file_service import FileService
+from services.external_api import AlbertAIService
+from models.collection import Collection
+from services.collection_service import CollectionService
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 
@@ -25,6 +28,11 @@ async def get_my_help_assistants(
     db: AsyncSession = Depends(get_db)
 ):
     return await HelpAssistantController.get_user_help_assistants(current_user.id, db)
+@router.get("/models")
+async def list_models():
+    ai_service = AlbertAIService()
+    response = await ai_service.list_models()
+    return response.get('data', [])  # Extract only data key when present 
 
 @router.get("/{help_assistant_id}", response_model=HelpAssistant)
 async def get_help_assistant(
@@ -102,4 +110,18 @@ async def delete_file(
 
     file_service = FileService(db)
     await file_service.delete_file(file_id)
-    return {"message": "File deleted successfully"} 
+    return {"message": "File deleted successfully"}
+
+@router.get("/{help_assistant_id}/collection", response_model=Collection)
+async def get_assistant_collection(
+    help_assistant_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    help_assistant = await HelpAssistantController.get_help_assistant(help_assistant_id, db)
+    if help_assistant.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this assistant's collection")
+    
+    collection_service = CollectionService(db)
+    return await collection_service.get_by_help_assistant(help_assistant_id)
+

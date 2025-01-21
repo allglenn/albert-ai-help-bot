@@ -13,4 +13,6 @@ python-multipart>=0.0.5
 prometheus-fastapi-instrumentator>=6.1.0
 prometheus-client>=0.17.1
 psutil>=5.9.0
-aiofiles>=0.8.0 
+aiofiles>=0.8.0
+alembic>=1.7.7
+psycopg2-binary>=2.9.3 

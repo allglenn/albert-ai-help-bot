@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from db.models import AssistantFile
 from models.assistant_file import AssistantFileCreate
+from services.collection_service import CollectionService
 
 UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
 ALLOWED_EXTENSIONS = {'.pdf', '.md', '.txt'}
@@ -14,6 +15,7 @@ ALLOWED_EXTENSIONS = {'.pdf', '.md', '.txt'}
 class FileService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.collection_service = CollectionService(db)
         UPLOAD_DIR.mkdir(exist_ok=True)
 
     def _is_allowed_file(self, filename: str) -> bool:
@@ -23,6 +25,9 @@ class FileService:
         if not self._is_allowed_file(file.filename):
             raise ValueError("File type not allowed")
 
+        # Get collection ID for the assistant
+        collection = await self.collection_service.get_by_help_assistant(help_assistant_id)
+        
         # Create assistant-specific directory
         assistant_dir = UPLOAD_DIR / str(help_assistant_id)
         assistant_dir.mkdir(exist_ok=True)
@@ -38,7 +43,8 @@ class FileService:
             file_type=Path(file.filename).suffix.lower(),
             file_size=os.path.getsize(file_path),
             file_path=str(file_path),
-            help_assistant_id=help_assistant_id
+            help_assistant_id=help_assistant_id,
+            assistant_collection_id=collection.albert_id if collection else None
         )
         
         self.db.add(db_file)

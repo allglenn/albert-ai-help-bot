@@ -7,6 +7,7 @@ class AssistantFileBase(BaseModel):
     file_type: str
     file_size: int
     file_path: str
+    assistant_collection_id: Optional[str] = None
 
 class AssistantFileCreate(AssistantFileBase):
     help_assistant_id: int

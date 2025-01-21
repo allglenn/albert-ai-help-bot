@@ -2,6 +2,7 @@ from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, E
 from sqlalchemy.ext.declarative import declarative_base
 import enum
 from datetime import datetime
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -41,6 +42,9 @@ class HelpAssistant(Base):
     message = Column(String)
     response = Column(String)
 
+    # Update relationship definition
+    collection = relationship("Collection", back_populates="help_assistant", uselist=False)
+
     @property
     def authorization_list(self):
         """Convert stored string to list of Authorization enums"""
@@ -66,3 +70,15 @@ class AssistantFile(Base):
     file_path = Column(String, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     help_assistant_id = Column(Integer, ForeignKey("help_assistant.id", ondelete="CASCADE"))
+    assistant_collection_id = Column(String, nullable=True)
+
+class Collection(Base):
+    __tablename__ = "collections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    albert_id = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    help_assistant_id = Column(Integer, ForeignKey("help_assistant.id", ondelete="SET NULL"), nullable=True)
+    
+    # Add the back reference
+    help_assistant = relationship("HelpAssistant", back_populates="collection")
