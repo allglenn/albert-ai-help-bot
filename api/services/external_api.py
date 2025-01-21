@@ -117,17 +117,17 @@ class AlbertAIService:
             )
             return response.json()
 
-    async def search_collection(self, collection_id: str, query: str, k: int = 6) -> List[str]:
+    async def search_collection(self, collection_id: str, query: str, k: int = 6) -> List[Dict[str, Any]]:
         """
         Search a collection for relevant chunks based on a query.
         
         Args:
             collection_id: The ID of the collection to search
             query: The search query
-            k: Number of results to return (default: 5)
+            k: Number of results to return (default: 6)
             
         Returns:
-            List of chunk contents from the search results
+            List of dictionaries containing chunk content and metadata
         """
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -146,7 +146,14 @@ class AlbertAIService:
             
             if response.status_code == 200:
                 results = response.json()
-                return [result["chunk"]["content"] for result in results.get("data", [])]
+                return [
+                    {
+                        "content": result["chunk"]["content"],
+                        "metadata": result["chunk"]["metadata"],
+                        "score": result["score"]
+                    } 
+                    for result in results.get("data", [])
+                ]
             else:
                 raise ValueError(f"Search failed with status {response.status_code}: {response.text}")
 

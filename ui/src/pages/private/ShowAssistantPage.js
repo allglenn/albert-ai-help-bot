@@ -17,7 +17,10 @@ import {
     Delete as DeleteIcon,
     Description as FileIcon,
     Info as InfoIcon,
-    Search as SearchIcon
+    Search as SearchIcon,
+    Article as ArticleIcon,
+    Star as StarIcon,
+    Description as DescriptionIcon
 } from '@mui/icons-material';
 
 const ShowAssistantPage = () => {
@@ -214,6 +217,34 @@ const ShowAssistantPage = () => {
             setSnackbar({
                 open: true,
                 message: err.message,
+                severity: 'error'
+            });
+        }
+    };
+
+    const handleFileOpen = async (filename) => {
+        try {
+            // Find file by name
+            const file = files.find(f => f.filename === filename);
+            if (!file) {
+                setSnackbar({
+                    open: true,
+                    message: 'File not found in assistant files',
+                    severity: 'error'
+                });
+                return;
+            }
+
+            // Get file URL with auth token
+            const fileUrl = `http://localhost:8000/api/v1/help-assistant/${id}/files/${file.id}/download?token=${encodeURIComponent(token)}`;
+
+            // Open in new tab
+            window.open(fileUrl, '_blank');
+
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: 'Failed to open file: ' + err.message,
                 severity: 'error'
             });
         }
@@ -499,10 +530,94 @@ const ShowAssistantPage = () => {
                             {searchResults.length > 0 && (
                                 <List>
                                     {searchResults.map((result, index) => (
-                                        <ListItem key={index}>
+                                        <ListItem
+                                            key={index}
+                                            sx={{
+                                                mb: 2,
+                                                backgroundColor: 'background.paper',
+                                                borderRadius: 1,
+                                                border: '1px solid',
+                                                borderColor: 'divider',
+                                                '&:hover': {
+                                                    backgroundColor: 'action.hover'
+                                                }
+                                            }}
+                                        >
                                             <ListItemText
-                                                primary={`Result ${index + 1}`}
-                                                secondary={highlightSearchTerm(result, searchQuery)}
+                                                primary={
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <ArticleIcon color="primary" sx={{ fontSize: 20 }} />
+                                                            <Typography variant="subtitle1" color="primary">
+                                                                Result {index + 1}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <StarIcon
+                                                                sx={{
+                                                                    fontSize: 18,
+                                                                    color: result.score > 0.7 ? 'success.main' : 'text.secondary'
+                                                                }}
+                                                            />
+                                                            <Typography
+                                                                variant="caption"
+                                                                sx={{
+                                                                    color: result.score > 0.7 ? 'success.main' : 'text.secondary',
+                                                                    fontWeight: 'medium'
+                                                                }}
+                                                            >
+                                                                Score: {result.score.toFixed(2)}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Box>
+                                                }
+                                                secondary={
+                                                    <Box sx={{ pl: 3.5 }}>
+                                                        <Typography
+                                                            component="div"
+                                                            variant="body2"
+                                                            sx={{
+                                                                mb: 1,
+                                                                color: 'text.primary',
+                                                                lineHeight: 1.6
+                                                            }}
+                                                        >
+                                                            {highlightSearchTerm(result.content, searchQuery)}
+                                                        </Typography>
+                                                        {result.metadata && Object.keys(result.metadata).length > 0 && (
+                                                            <Box sx={{
+                                                                mt: 1,
+                                                                pt: 1,
+                                                                borderTop: '1px solid',
+                                                                borderColor: 'divider',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1
+                                                            }}>
+                                                                <DescriptionIcon
+                                                                    sx={{
+                                                                        fontSize: 16,
+                                                                        color: 'text.secondary'
+                                                                    }}
+                                                                />
+                                                                <Link
+                                                                    component="button"
+                                                                    variant="caption"
+                                                                    onClick={() => handleFileOpen(result.metadata.document_name)}
+                                                                    sx={{
+                                                                        fontWeight: 'medium',
+                                                                        cursor: 'pointer',
+                                                                        '&:hover': {
+                                                                            textDecoration: 'underline'
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    From: {result.metadata.document_name}
+                                                                </Link>
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                }
                                             />
                                         </ListItem>
                                     ))}

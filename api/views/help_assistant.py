@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 from db.database import get_db
@@ -12,6 +12,8 @@ from services.external_api import AlbertAIService
 from models.collection import Collection
 from services.collection_service import CollectionService
 from tools.collection_tool import CollectionTool
+from fastapi.responses import FileResponse
+import os
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 
@@ -154,7 +156,8 @@ async def agent_search(
         # Search collection
         search_results = await collection_tool.search_collection(
             collection_id=collection.albert_id,
-            query=query["query"]
+            query=query["query"],
+            k=10
         )
         
         return {
@@ -167,4 +170,38 @@ async def agent_search(
             status_code=500,
             detail=f"Failed to search collection: {str(e)}"
         )
+
+@router.get("/{help_assistant_id}/files/{file_id}/download")
+async def get_assistant_file(
+    help_assistant_id: int,
+    file_id: int,
+    token: str = Query(...),  # Make token required query parameter
+    db: AsyncSession = Depends(get_db)
+):
+    """Get a specific file from an assistant"""
+    # Verify token manually since we're not using the dependency
+    try:
+        current_user = await get_current_user(token, db)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    help_assistant = await HelpAssistantController.get_help_assistant(help_assistant_id, db)
+    if help_assistant.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this file")
+
+    file_service = FileService(db)
+    files = await file_service.get_assistant_files(help_assistant_id)
+    file = next((f for f in files if f.id == file_id), None)
+    
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if not os.path.exists(file.file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    return FileResponse(
+        file.file_path,
+        filename=file.filename,
+        media_type="application/octet-stream"
+    )
 
