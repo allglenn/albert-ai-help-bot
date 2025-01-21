@@ -71,6 +71,7 @@ class AssistantFile(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     help_assistant_id = Column(Integer, ForeignKey("help_assistant.id", ondelete="CASCADE"))
     assistant_collection_id = Column(String, nullable=True)
+    albert_ai_id = Column(String, nullable=True)
 
 class Collection(Base):
     __tablename__ = "collections"

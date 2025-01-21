@@ -65,6 +65,20 @@ class FileService:
                         file_path=str(file_path),
                         collection_id=collection.albert_id
                     )
+                    
+                    # Get documents to find the ID of our newly uploaded file
+                    documents = await self.albert_service.get_documents(collection.albert_id)
+                    
+                    # Find the most recently created document with matching filename
+                    matching_docs = [
+                        doc for doc in documents 
+                        if doc["name"] == file.filename
+                    ]
+                    if matching_docs:
+                        newest_doc = max(matching_docs, key=lambda x: x["created_at"])
+                        db_file.albert_ai_id = newest_doc["id"]
+                        await self.db.commit()
+
                 except Exception as e:
                     raise ValueError(f"Failed to upload file to Albert AI: {str(e)}")
 
