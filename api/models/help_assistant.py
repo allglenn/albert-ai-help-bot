@@ -2,11 +2,15 @@ from pydantic import BaseModel, validator
 from typing import List, Optional
 from enum import Enum
 import random
+import json
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.types import JSON
 from db.database import Base
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Authorization(str, Enum):
     CAN_SEND_EMAIL = "CAN_SEND_EMAIL"
@@ -42,13 +46,38 @@ class HelpAssistantBase(BaseModel):
         return v
 
     @validator('authorizations', pre=True)
-    def split_authorizations(cls, v):
+    def parse_authorizations(cls, v):
+        """Convert various authorization formats to List[Authorization]"""
+        logger.info(f"Parsing authorizations input: {v} (type: {type(v)})")
+        
         if isinstance(v, str):
-            # Handle empty string
-            if not v:
-                return []
-            # Split string and convert to Authorization enum
-            return [Authorization(auth.strip()) for auth in v.split(',')]
+            logger.info("Input is string, attempting to parse")
+            try:
+                # Try to parse JSON string
+                v = json.loads(v)
+                logger.info(f"Successfully parsed JSON string to: {v}")
+            except json.JSONDecodeError as e:
+                logger.info(f"Not a JSON string, splitting by comma: {e}")
+                # If not JSON, split comma-separated string
+                v = [x.strip() for x in v.split(',') if x.strip()]
+                logger.info(f"Split result: {v}")
+        
+        if isinstance(v, list):
+            logger.info(f"Converting list items to Authorization enums: {v}")
+            try:
+                result = [
+                    auth if isinstance(auth, Authorization)
+                    else Authorization(auth)
+                    for auth in v
+                    if auth
+                ]
+                logger.info(f"Successfully converted to Authorization enums: {result}")
+                return result
+            except ValueError as e:
+                logger.error(f"Error converting to Authorization enum: {e}")
+                raise
+        
+        logger.info(f"Returning value as-is: {v}")
         return v
 
     @staticmethod
@@ -75,9 +104,13 @@ class HelpAssistantResponse(HelpAssistantBase):
     user_id: int
     message: Optional[str] = None
     response: Optional[str] = None
+    tone: ToneType = ToneType.PROFESSIONAL
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            Authorization: lambda v: v.value  # Ensure Authorization enums are serialized as strings
+        }
 
 class HelpAssistant(Base):
     __tablename__ = "help_assistant"
@@ -93,7 +126,7 @@ class HelpAssistant(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"))
     message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     response: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    tone: Mapped[str] = mapped_column(String, default=ToneType.PROFESSIONAL)  # Add tone column
+    tone: Mapped[str] = mapped_column(String, default=ToneType.PROFESSIONAL)  # Make sure this exists
     
     # Relationships
     collection = relationship("Collection", back_populates="help_assistant", uselist=False)

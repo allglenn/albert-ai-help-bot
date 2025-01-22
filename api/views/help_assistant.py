@@ -254,7 +254,9 @@ async def init_chat(
         # Check if assistant exists and user has access
         help_assistant = await HelpAssistantController.get_help_assistant(assistant_id, db)
         
-        print(f"Assistant details - ID: {assistant_id}, User ID: {help_assistant.user_id}")  # Debug print
+        # Get tone with fallback
+        tone = getattr(help_assistant, 'tone', None) or ToneType.PROFESSIONAL
+        print(f"Assistant details - ID: {assistant_id}, User ID: {help_assistant.user_id}, Tone: {tone}")
         
         if help_assistant.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to access this assistant")
@@ -263,12 +265,20 @@ async def init_chat(
         chat_service = ChatService(db)
         chat = await chat_service.create_chat(assistant_id, current_user.id)
 
-        # Add welcome message in French
-        welcome_message = (
+        # Create initial welcome message
+        raw_welcome = (
             f"Bonjour ! Je suis {help_assistant.operator_name} de {help_assistant.name}. "
             f"Ma mission est {help_assistant.mission}. "
             "Comment puis-je vous aider aujourd'hui ?"
         )
+
+        # Rephrase welcome message according to assistant's tone
+        ai_service = AlbertAIService()
+        try:
+            welcome_message = await ai_service.rephrase_with_tone(raw_welcome, tone)
+        except Exception as e:
+            print(f"Error rephrasing welcome message: {str(e)}")
+            welcome_message = raw_welcome
 
         await chat_service.add_message(
             chat_id=chat.id,

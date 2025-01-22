@@ -215,4 +215,65 @@ class AlbertAIService:
                 "sources": sources,
                 "chunks": chunks
             }
+        
+
+    async def rephrase_with_tone(self, message: str, tone: str) -> str:
+        """
+        Rephrase a message according to a specific tone using the AI model.
+        
+        Args:
+            message: The message to rephrase
+            tone: The tone to use (e.g., PROFESSIONAL, FRIENDLY, etc.)
+            
+        Returns:
+            The rephrased message
+        """
+        tone_prompts = {
+            "PROFESSIONAL": "Reformule ce message de manière professionnelle et formelle",
+            "FRIENDLY": "Reformule ce message de manière chaleureuse et amicale",
+            "CASUAL": "Reformule ce message de manière décontractée et informelle",
+            "EMPATHETIC": "Reformule ce message avec empathie et compréhension",
+            "TECHNICAL": "Reformule ce message de manière technique et précise",
+            "EDUCATIONAL": "Reformule ce message de manière pédagogique",
+            "HUMOROUS": "Reformule ce message avec humour et légèreté"
+        }
+
+        # Add clear instructions for a single response
+        system_prompt = """Tu es un assistant qui reformule les messages selon le ton demandé.
+        Instructions:
+        - Donne une seule reformulation
+        - Ne propose pas plusieurs options
+        - Ne mets pas de guillemets
+        - Réponds directement avec la reformulation
+        """
+
+        prompt = f"{tone_prompts.get(tone, tone_prompts['PROFESSIONAL'])} : {message}"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": self.llm_model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "stream": False,
+                    "n": 1,
+                    "temperature": 0.7  # Add some randomness but not too much
+                }
+            )
+
+            if response.status_code != 200:
+                raise ValueError(f"Failed to rephrase message: {response.text}")
+
+            result = response.json()
+            # Clean up the response by removing quotes and extra whitespace
+            response_text = result["choices"][0]["message"]["content"]
+            response_text = response_text.strip('"\'').strip()
+            return response_text
 

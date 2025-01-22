@@ -1,25 +1,27 @@
-"""add tone to help assistant
+"""add tone column
 
-Revision ID: 2025_01_22_add_tone
-Revises: previous_revision_id  # Replace with your last migration's revision ID
-Create Date: 2025-01-22 00:00:00.000000
+Revision ID: 202501221234
+Revises: 202501221233
+Create Date: 2025-01-22 12:34:56.789012
+
 """
-
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+
 
 # revision identifiers, used by Alembic
-revision = '2025_01_22_add_tone'
-down_revision = None  # Replace with your last migration's revision ID
+revision = '202501221234'
+down_revision = '202501221233'  # Point to the chats migration
 branch_labels = None
 depends_on = None
+
 
 def upgrade():
     # Add tone column with default value
     op.add_column('help_assistant', 
         sa.Column('tone', sa.String(), nullable=False, server_default='PROFESSIONAL')
     )
+
 
 def downgrade():
     # Remove tone column

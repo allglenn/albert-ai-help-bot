@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, Enum, JSON
 from sqlalchemy.ext.declarative import declarative_base
 import enum
 from datetime import datetime
@@ -35,7 +35,7 @@ class HelpAssistant(Base):
     url = Column(String, nullable=False)
     mission = Column(String, nullable=False)
     description = Column(String)
-    authorizations = Column(String)  # Stored as comma-separated values
+    authorizations = Column(JSON, default=list)
     operator_name = Column(String, nullable=False)
     operator_pic = Column(String, nullable=False)  # URL to the operator's picture
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -50,15 +50,12 @@ class HelpAssistant(Base):
         """Convert stored string to list of Authorization enums"""
         if not self.authorizations:
             return []
-        return [Authorization(auth) for auth in self.authorizations.split(',')]
+        return [Authorization(auth) for auth in self.authorizations]
 
     @authorization_list.setter
     def authorization_list(self, auths):
         """Convert list of Authorization enums to stored string"""
-        if not auths:
-            self.authorizations = ""
-        else:
-            self.authorizations = ','.join(auth.value for auth in auths)
+        self.authorizations = [auth.value for auth in auths]
 
 class AssistantFile(Base):
     __tablename__ = "assistant_files"
