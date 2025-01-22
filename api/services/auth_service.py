@@ -33,7 +33,7 @@ class AuthService:
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
+            expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
             to_encode, 
@@ -63,17 +63,17 @@ class AuthService:
                 settings.SECRET_KEY, 
                 algorithms=[settings.ALGORITHM]
             )
+            user_id: int = payload.get("user_id")
             email: str = payload.get("sub")
-            if email is None:
+            if email is None or user_id is None:
                 raise credentials_exception
-            token_data = TokenData(email=email)
         except JWTError:
             raise credentials_exception
         
-        user = await self.user_service.get_user_by_email(email=token_data.email)
-        if user is None:
+        user = await self.user_service.get_user_by_email(email=email)
+        if user is None or user.id != user_id:
             raise credentials_exception
-        return user 
+        return user
 
     async def logout(self, token: str) -> None:
         await self.token_blacklist.blacklist_token(token) 

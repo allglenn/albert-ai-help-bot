@@ -23,7 +23,10 @@ class AuthController:
             
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = auth_service.create_access_token(
-            data={"sub": user.email},
+            data={
+                "sub": user.email,
+                "user_id": user.id
+            },
             expires_delta=access_token_expires
         )
         

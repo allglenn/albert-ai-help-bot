@@ -9,7 +9,10 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from config import settings
-from db.models import Base
+from db.database import Base
+from models.user import User
+from models.chat import Chat, Message
+from models.help_assistant import HelpAssistant
 
 config = context.config
 

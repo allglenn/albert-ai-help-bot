@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
     Container, Typography, Button, Box, Paper, Grid, Avatar,
     Divider, CircularProgress, Dialog, DialogTitle, DialogContent,
-    DialogActions, TextField, MenuItem, Card, CardContent, IconButton
+    DialogActions, TextField, MenuItem, Card, CardContent, IconButton,
+    FormControl, InputLabel, Select
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PrivateLayout from '../../components/layout/PrivateLayout';
@@ -31,8 +32,11 @@ const Dashboard = () => {
         mission: '',
         description: '',
         operator_name: '',
-        authorizations: []
+        authorizations: [],
+        tone: 'PROFESSIONAL'
     });
+
+    const [tones, setTones] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -76,6 +80,30 @@ const Dashboard = () => {
         fetchData();
     }, [token]);
 
+    useEffect(() => {
+        // Fetch available tones when component mounts
+        const fetchTones = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/help-assistant/tones', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tones');
+                }
+
+                const tonesData = await response.json();
+                setTones(tonesData);
+            } catch (error) {
+                console.error('Failed to fetch tones:', error);
+            }
+        };
+        fetchTones();
+    }, [token]);
+
     const handleCreateAssistant = async () => {
         try {
             const response = await fetch('http://localhost:8000/api/v1/help-assistant/', {
@@ -100,7 +128,8 @@ const Dashboard = () => {
                 mission: '',
                 description: '',
                 operator_name: '',
-                authorizations: []
+                authorizations: [],
+                tone: 'PROFESSIONAL'
             });
         } catch (err) {
             setError(err.message);
@@ -151,6 +180,25 @@ const Dashboard = () => {
         } catch (err) {
             setError(err.message);
         }
+    };
+
+    const handleToneChange = (event) => {
+        setNewAssistant({
+            ...newAssistant,
+            tone: event.target.value
+        });
+    };
+
+    const handleUpdateToneChange = (event) => {
+        setAssistantToUpdate({
+            ...assistantToUpdate,
+            tone: event.target.value
+        });
+    };
+
+    // Add a function to get tone description
+    const getToneDescription = (toneValue) => {
+        return tones[toneValue] || toneValue;
     };
 
     if (loading) {
@@ -253,6 +301,9 @@ const Dashboard = () => {
                                                     <Typography variant="subtitle1" color="textSecondary">
                                                         {assistant.name}
                                                     </Typography>
+                                                    <Typography variant="subtitle1" color="textSecondary">
+                                                        {getToneDescription(assistant.tone)}
+                                                    </Typography>
                                                     <Typography variant="body2" sx={{ mt: 1 }}>
                                                         {assistant.mission}
                                                     </Typography>
@@ -313,6 +364,7 @@ const Dashboard = () => {
                             fullWidth
                             label="Name"
                             margin="normal"
+                            name="name"
                             value={newAssistant.name}
                             onChange={(e) => setNewAssistant({ ...newAssistant, name: e.target.value })}
                         />
@@ -320,6 +372,7 @@ const Dashboard = () => {
                             fullWidth
                             label="URL"
                             margin="normal"
+                            name="url"
                             value={newAssistant.url}
                             onChange={(e) => setNewAssistant({ ...newAssistant, url: e.target.value })}
                         />
@@ -327,6 +380,7 @@ const Dashboard = () => {
                             fullWidth
                             label="Mission"
                             margin="normal"
+                            name="mission"
                             value={newAssistant.mission}
                             onChange={(e) => setNewAssistant({ ...newAssistant, mission: e.target.value })}
                         />
@@ -336,6 +390,7 @@ const Dashboard = () => {
                             margin="normal"
                             multiline
                             rows={3}
+                            name="description"
                             value={newAssistant.description}
                             onChange={(e) => setNewAssistant({ ...newAssistant, description: e.target.value })}
                         />
@@ -343,6 +398,7 @@ const Dashboard = () => {
                             fullWidth
                             label="Operator Name"
                             margin="normal"
+                            name="operator_name"
                             value={newAssistant.operator_name}
                             onChange={(e) => setNewAssistant({ ...newAssistant, operator_name: e.target.value })}
                         />
@@ -351,13 +407,27 @@ const Dashboard = () => {
                             select
                             label="Authorizations"
                             margin="normal"
-                            SelectProps={{ multiple: true }}
+                            name="authorizations"
                             value={newAssistant.authorizations}
                             onChange={(e) => setNewAssistant({ ...newAssistant, authorizations: e.target.value })}
                         >
                             <MenuItem value="CAN_SEND_EMAIL">Can Send Email</MenuItem>
                             <MenuItem value="CAN_READ_DOCUMENTS">Can Read Documents</MenuItem>
                         </TextField>
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Ton de l'assistant</InputLabel>
+                            <Select
+                                value={newAssistant.tone}
+                                onChange={handleToneChange}
+                                label="Ton de l'assistant"
+                            >
+                                {Object.entries(tones).map(([tone, description]) => (
+                                    <MenuItem key={tone} value={tone}>
+                                        {description}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
@@ -400,21 +470,14 @@ const Dashboard = () => {
                 </Dialog>
 
                 {/* Update Assistant Dialog */}
-                <Dialog
-                    open={updateDialog}
-                    onClose={() => {
-                        setUpdateDialog(false);
-                        setAssistantToUpdate(null);
-                    }}
-                    maxWidth="sm"
-                    fullWidth
-                >
+                <Dialog open={updateDialog} onClose={() => setUpdateDialog(false)} maxWidth="sm" fullWidth>
                     <DialogTitle>Update Assistant</DialogTitle>
                     <DialogContent>
                         <TextField
                             fullWidth
                             label="Name"
                             margin="normal"
+                            name="name"
                             value={assistantToUpdate?.name || ''}
                             onChange={(e) => setAssistantToUpdate({
                                 ...assistantToUpdate,
@@ -425,6 +488,7 @@ const Dashboard = () => {
                             fullWidth
                             label="URL"
                             margin="normal"
+                            name="url"
                             value={assistantToUpdate?.url || ''}
                             onChange={(e) => setAssistantToUpdate({
                                 ...assistantToUpdate,
@@ -435,6 +499,7 @@ const Dashboard = () => {
                             fullWidth
                             label="Mission"
                             margin="normal"
+                            name="mission"
                             value={assistantToUpdate?.mission || ''}
                             onChange={(e) => setAssistantToUpdate({
                                 ...assistantToUpdate,
@@ -447,6 +512,7 @@ const Dashboard = () => {
                             margin="normal"
                             multiline
                             rows={3}
+                            name="description"
                             value={assistantToUpdate?.description || ''}
                             onChange={(e) => setAssistantToUpdate({
                                 ...assistantToUpdate,
@@ -457,6 +523,7 @@ const Dashboard = () => {
                             fullWidth
                             label="Operator Name"
                             margin="normal"
+                            name="operator_name"
                             value={assistantToUpdate?.operator_name || ''}
                             onChange={(e) => setAssistantToUpdate({
                                 ...assistantToUpdate,
@@ -468,7 +535,7 @@ const Dashboard = () => {
                             select
                             label="Authorizations"
                             margin="normal"
-                            SelectProps={{ multiple: true }}
+                            name="authorizations"
                             value={assistantToUpdate?.authorizations || []}
                             onChange={(e) => setAssistantToUpdate({
                                 ...assistantToUpdate,
@@ -478,23 +545,24 @@ const Dashboard = () => {
                             <MenuItem value="CAN_SEND_EMAIL">Can Send Email</MenuItem>
                             <MenuItem value="CAN_READ_DOCUMENTS">Can Read Documents</MenuItem>
                         </TextField>
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Ton de l'assistant</InputLabel>
+                            <Select
+                                value={assistantToUpdate?.tone || ''}
+                                onChange={handleUpdateToneChange}
+                                label="Ton de l'assistant"
+                            >
+                                {Object.entries(tones).map(([tone, description]) => (
+                                    <MenuItem key={tone} value={tone}>
+                                        {description}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                     </DialogContent>
                     <DialogActions>
-                        <Button
-                            onClick={() => {
-                                setUpdateDialog(false);
-                                setAssistantToUpdate(null);
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleUpdateAssistant}
-                            variant="contained"
-                            color="primary"
-                        >
-                            Update
-                        </Button>
+                        <Button onClick={() => setUpdateDialog(false)}>Cancel</Button>
+                        <Button onClick={handleUpdateAssistant} variant="contained">Update</Button>
                     </DialogActions>
                 </Dialog>
             </Container>

@@ -12,6 +12,14 @@ class Authorization(str, Enum):
     CAN_SEND_EMAIL = "CAN_SEND_EMAIL"
     CAN_READ_DOCUMENTS = "CAN_READ_DOCUMENTS"
 
+class ToneType(str, Enum):
+    PROFESSIONAL = "PROFESSIONAL"  # Formal and business-like
+    FRIENDLY = "FRIENDLY"         # Warm and approachable
+    CASUAL = "CASUAL"            # Relaxed and informal
+    EMPATHETIC = "EMPATHETIC"    # Understanding and compassionate
+    TECHNICAL = "TECHNICAL"      # Precise and technical
+    EDUCATIONAL = "EDUCATIONAL"  # Teaching-oriented
+    HUMOROUS = "HUMOROUS"       # Light and funny
 
 class HelpAssistantBase(BaseModel):
     name: str
@@ -21,6 +29,7 @@ class HelpAssistantBase(BaseModel):
     authorizations: List[Authorization] = []
     operator_name: str
     operator_pic: Optional[str] = None  # Made optional as we'll generate it if not provided
+    tone: ToneType = ToneType.PROFESSIONAL  # Default to professional tone
 
     @validator('operator_pic', pre=True, always=True)
     def set_operator_pic(cls, v, values):
@@ -41,6 +50,19 @@ class HelpAssistantBase(BaseModel):
             # Split string and convert to Authorization enum
             return [Authorization(auth.strip()) for auth in v.split(',')]
         return v
+
+    @staticmethod
+    def get_available_tones():
+        """Get all available tones with their descriptions"""
+        return {
+            ToneType.PROFESSIONAL: "Formal and business-like",
+            ToneType.FRIENDLY: "Warm and approachable",
+            ToneType.CASUAL: "Relaxed and informal",
+            ToneType.EMPATHETIC: "Understanding and compassionate",
+            ToneType.TECHNICAL: "Precise and technical",
+            ToneType.EDUCATIONAL: "Teaching-oriented",
+            ToneType.HUMOROUS: "Light and funny"
+        }
 
 class HelpAssistantCreate(HelpAssistantBase):
     pass
@@ -71,6 +93,7 @@ class HelpAssistant(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"))
     message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     response: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    tone: Mapped[str] = mapped_column(String, default=ToneType.PROFESSIONAL)  # Add tone column
     
     # Relationships
     collection = relationship("Collection", back_populates="help_assistant", uselist=False)

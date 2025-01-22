@@ -9,7 +9,8 @@ from models import (
     HelpAssistantResponse,
     User,
     Chat,
-    EmitterType
+    EmitterType,
+    ToneType
 )
 from controllers.help_assistant import HelpAssistantController
 from views.auth import get_current_user
@@ -22,8 +23,22 @@ from tools.collection_tool import CollectionTool
 from fastapi.responses import FileResponse
 import os
 from services.chat_service import ChatService
+from sqlalchemy import select
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
+
+@router.get("/tones", response_model=Dict[str, str])
+async def get_available_tones():
+    """Get all available assistant tones with descriptions in French"""
+    return {
+        ToneType.PROFESSIONAL: "Formel et professionnel",
+        ToneType.FRIENDLY: "Chaleureux et accessible",
+        ToneType.CASUAL: "Décontracté et informel",
+        ToneType.EMPATHETIC: "Compréhensif et compatissant",
+        ToneType.TECHNICAL: "Précis et technique",
+        ToneType.EDUCATIONAL: "Pédagogique et instructif",
+        ToneType.HUMOROUS: "Léger et humoristique"
+    }
 
 @router.post("/", response_model=HelpAssistantResponse)
 async def create_help_assistant(
@@ -221,8 +236,26 @@ async def init_chat(
 ):
     """Initialize a new chat session"""
     try:
+        # Debug prints
+        print(f"Current user details - ID: {current_user.id}, Email: {current_user.email}")
+        
+        # Verify user exists in database
+        user_query = select(User).where(User.id == current_user.id)
+        result = await db.execute(user_query)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            print(f"User {current_user.id} not found in database")  # Debug print
+            raise HTTPException(
+                status_code=404,
+                detail=f"User with ID {current_user.id} not found in database"
+            )
+
         # Check if assistant exists and user has access
         help_assistant = await HelpAssistantController.get_help_assistant(assistant_id, db)
+        
+        print(f"Assistant details - ID: {assistant_id}, User ID: {help_assistant.user_id}")  # Debug print
+        
         if help_assistant.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to access this assistant")
 
@@ -230,8 +263,13 @@ async def init_chat(
         chat_service = ChatService(db)
         chat = await chat_service.create_chat(assistant_id, current_user.id)
 
-        # Add welcome message
-        welcome_message = f"Hello! I'm {help_assistant.operator_name} from {help_assistant.name}. {help_assistant.mission} How can I help you today?"
+        # Add welcome message in French
+        welcome_message = (
+            f"Bonjour ! Je suis {help_assistant.operator_name} de {help_assistant.name}. "
+            f"Ma mission est {help_assistant.mission}. "
+            "Comment puis-je vous aider aujourd'hui ?"
+        )
+
         await chat_service.add_message(
             chat_id=chat.id,
             content=welcome_message,
@@ -254,7 +292,10 @@ async def init_chat(
             }]
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Error initializing chat: {str(e)}")  # Debug print
         raise HTTPException(
             status_code=500,
             detail=f"Failed to initialize chat: {str(e)}"

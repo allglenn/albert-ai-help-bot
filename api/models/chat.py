@@ -5,6 +5,7 @@ import enum
 from db.database import Base
 from models.user import User
 from models.help_assistant import HelpAssistant
+from sqlalchemy.orm import Mapped, mapped_column
 
 class EmitterType(str, enum.Enum):
     ASSISTANT = "ASSISTANT"
@@ -13,9 +14,9 @@ class EmitterType(str, enum.Enum):
 class Chat(Base):
     __tablename__ = "chats"
 
-    id = Column(Integer, primary_key=True, index=True)
-    assistant_id = Column(Integer, ForeignKey(HelpAssistant.__table__.name + ".id"))
-    user_id = Column(Integer, ForeignKey(User.__table__.name + ".id"))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    assistant_id: Mapped[int] = mapped_column(Integer, ForeignKey("help_assistant.id"))
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

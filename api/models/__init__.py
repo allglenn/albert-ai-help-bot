@@ -1,6 +1,13 @@
 from .user import User, UserBase, UserCreate, UserResponse, UserInDB
 from .collection import Collection, CollectionBase, CollectionCreate, CollectionResponse
-from .help_assistant import HelpAssistant, HelpAssistantBase, HelpAssistantCreate, HelpAssistantUpdate, HelpAssistantResponse
+from .help_assistant import (
+    HelpAssistant, 
+    HelpAssistantBase, 
+    HelpAssistantCreate, 
+    HelpAssistantUpdate, 
+    HelpAssistantResponse,
+    ToneType
+)
 from .chat import Chat, Message, EmitterType
 from .assistant_file import AssistantFile
 
@@ -10,5 +17,6 @@ __all__ = [
     'Collection', 'CollectionBase', 'CollectionCreate', 'CollectionResponse',
     'HelpAssistant', 'HelpAssistantBase', 'HelpAssistantCreate', 'HelpAssistantUpdate', 'HelpAssistantResponse',
     'Chat', 'Message', 'EmitterType',
-    'AssistantFile'
+    'AssistantFile',
+    'ToneType'
 ] 

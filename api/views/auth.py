@@ -8,6 +8,10 @@ from services.auth_service import AuthService
 from db.database import get_db
 import asyncio
 import random
+from fastapi import HTTPException
+from jose import JWTError, jwt
+from sqlalchemy import select
+from config import settings
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -30,10 +34,7 @@ async def login(
 ):
     return await AuthController.login(login_data, db)
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
-) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     auth_service = AuthService(db)
     return await auth_service.get_current_user(token)
 

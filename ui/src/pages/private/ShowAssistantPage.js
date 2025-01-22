@@ -65,6 +65,8 @@ const ShowAssistantPage = () => {
     const [chatMessage, setChatMessage] = useState('');
     const [chatHistory, setChatHistory] = useState([]);
     const [sendingMessage, setSendingMessage] = useState(false);
+    const [chatId, setChatId] = useState(null);
+    const [tones, setTones] = useState({});  // Add tones state
 
     const fetchFiles = async () => {
         try {
@@ -355,9 +357,19 @@ const ShowAssistantPage = () => {
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to initialize chat');
+            if (!response.ok) {
+                const error = await response.json();
+                if (error.detail.includes("Please log out and log in again")) {
+                    // Clear token and redirect to login
+                    localStorage.removeItem('token');
+                    navigate('/login');
+                    return;
+                }
+                throw new Error(error.detail);
+            }
 
             const data = await response.json();
+            setChatId(data.chat_id);
             setChatHistory(data.messages.map(msg => ({
                 type: msg.emitter.toLowerCase(),
                 content: msg.content,
@@ -373,6 +385,35 @@ const ShowAssistantPage = () => {
             });
         }
     };
+
+    // Add function to get tone description
+    const getToneDescription = (toneValue) => {
+        return tones[toneValue] || toneValue;
+    };
+
+    // Add useEffect to fetch tones
+    useEffect(() => {
+        const fetchTones = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/help-assistant/tones', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tones');
+                }
+
+                const tonesData = await response.json();
+                setTones(tonesData);
+            } catch (error) {
+                console.error('Failed to fetch tones:', error);
+            }
+        };
+        fetchTones();
+    }, [token]);
 
     if (loading) {
         return (
@@ -430,10 +471,13 @@ const ShowAssistantPage = () => {
                                     <Typography variant="h5" gutterBottom>
                                         {assistant.operator_name}
                                     </Typography>
+                                    <Typography variant="subtitle1" color="textSecondary">
+                                        {getToneDescription(assistant.tone)}
+                                    </Typography>
                                     <Button
                                         variant="contained"
                                         startIcon={<ChatIcon />}
-                                        onClick={() => setChatOpen(true)}
+                                        onClick={handleStartChat}
                                         sx={{ width: '100%' }}
                                     >
                                         Start Chat
