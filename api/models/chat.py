@@ -1,40 +1,36 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
-import enum
 from db.database import Base
-from models.user import User
-from models.help_assistant import HelpAssistant
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 
-class EmitterType(str, enum.Enum):
+# Remove enum and use string constants instead
+class EmitterType:
+    USER = "USER"
     ASSISTANT = "ASSISTANT"
-    CLIENT = "CLIENT"
 
 class Chat(Base):
     __tablename__ = "chats"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    assistant_id: Mapped[int] = mapped_column(Integer, ForeignKey("help_assistant.id"))
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    id = Column(Integer, primary_key=True, index=True)
+    assistant_id = Column(Integer, ForeignKey("help_assistant.id", ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))  # Changed from "user" to "users"
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     assistant = relationship("HelpAssistant", back_populates="chats")
-    user = relationship("User", back_populates="chats")
     messages = relationship("Message", back_populates="chat", cascade="all, delete-orphan")
+    user = relationship("User", back_populates="chats")
 
 class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    chat_id = Column(Integer, ForeignKey("chats.id"))
-    emitter = Column(Enum(EmitterType))
-    content = Column(String)
-    sources = Column(String, nullable=True)  # Store as JSON string
+    chat_id = Column(Integer, ForeignKey("chats.id", ondelete="CASCADE"))
+    content = Column(String, nullable=False)
+    emitter = Column(String, nullable=False)  # Using string instead of enum
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    sources = Column(String, nullable=True)  # JSON string of source documents
 
     # Relationship
     chat = relationship("Chat", back_populates="messages") 
