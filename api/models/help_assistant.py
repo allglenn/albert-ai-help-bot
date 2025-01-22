@@ -2,7 +2,11 @@ from pydantic import BaseModel, validator
 from typing import List, Optional
 from enum import Enum
 import random
-from .collection import Collection
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.types import JSON
+from db.database import Base
+from datetime import datetime
 
 class Authorization(str, Enum):
     CAN_SEND_EMAIL = "CAN_SEND_EMAIL"
@@ -44,12 +48,33 @@ class HelpAssistantCreate(HelpAssistantBase):
 class HelpAssistantUpdate(HelpAssistantBase):
     pass
 
-class HelpAssistant(HelpAssistantBase):
+class HelpAssistantResponse(HelpAssistantBase):
     id: int
     user_id: int
     message: Optional[str] = None
     response: Optional[str] = None
-    collection: Optional[Collection] = None
+
+    class Config:
+        from_attributes = True
+
+class HelpAssistant(Base):
+    __tablename__ = "help_assistant"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String)
+    url: Mapped[str] = mapped_column(String)
+    mission: Mapped[str] = mapped_column(String)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    authorizations: Mapped[List[str]] = mapped_column(JSON, default=list)
+    operator_name: Mapped[str] = mapped_column(String)
+    operator_pic: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"))
+    message: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    response: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Relationships
+    collection = relationship("Collection", back_populates="help_assistant", uselist=False)
+    chats = relationship("Chat", back_populates="assistant")
 
     class Config:
         from_attributes = True

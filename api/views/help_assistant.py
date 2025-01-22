@@ -2,22 +2,30 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 from db.database import get_db
-from models.help_assistant import HelpAssistant, HelpAssistantCreate, HelpAssistantUpdate
+from models import (
+    HelpAssistant, 
+    HelpAssistantCreate, 
+    HelpAssistantUpdate, 
+    HelpAssistantResponse,
+    User,
+    Chat,
+    EmitterType
+)
 from controllers.help_assistant import HelpAssistantController
 from views.auth import get_current_user
-from models.user import User
 from models.assistant_file import AssistantFile
 from services.file_service import FileService
 from services.external_api import AlbertAIService
-from models.collection import Collection
+from models.collection import Collection, CollectionResponse
 from services.collection_service import CollectionService
 from tools.collection_tool import CollectionTool
 from fastapi.responses import FileResponse
 import os
+from services.chat_service import ChatService
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 
-@router.post("/", response_model=HelpAssistant)
+@router.post("/", response_model=HelpAssistantResponse)
 async def create_help_assistant(
     help_assistant: HelpAssistantCreate,
     current_user: User = Depends(get_current_user),
@@ -25,7 +33,7 @@ async def create_help_assistant(
 ):
     return await HelpAssistantController.create_help_assistant(help_assistant, current_user.id, db)
 
-@router.get("/me", response_model=List[HelpAssistant])
+@router.get("/me", response_model=List[HelpAssistantResponse])
 async def get_my_help_assistants(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -38,7 +46,7 @@ async def list_models():
     response = await ai_service.list_models()
     return response.get('data', [])  # Extract only data key when present 
 
-@router.get("/{help_assistant_id}", response_model=HelpAssistant)
+@router.get("/{help_assistant_id}", response_model=HelpAssistantResponse)
 async def get_help_assistant(
     help_assistant_id: int,
     current_user: User = Depends(get_current_user),
@@ -49,7 +57,7 @@ async def get_help_assistant(
         raise HTTPException(status_code=403, detail="Not authorized to access this help assistant")
     return help_assistant
 
-@router.put("/{help_assistant_id}", response_model=HelpAssistant)
+@router.put("/{help_assistant_id}", response_model=HelpAssistantResponse)
 async def update_help_assistant(
     help_assistant_id: int,
     help_assistant_update: HelpAssistantUpdate,
@@ -116,7 +124,7 @@ async def delete_file(
     await file_service.delete_file(file_id)
     return {"message": "File deleted successfully"}
 
-@router.get("/{help_assistant_id}/collection", response_model=Collection)
+@router.get("/{help_assistant_id}/collection", response_model=CollectionResponse)
 async def get_assistant_collection(
     help_assistant_id: int,
     current_user: User = Depends(get_current_user),
@@ -204,4 +212,51 @@ async def get_assistant_file(
         filename=file.filename,
         media_type="application/octet-stream"
     )
+
+@router.post("/{assistant_id}/chat/init", response_model=Dict)
+async def init_chat(
+    assistant_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Initialize a new chat session"""
+    try:
+        # Check if assistant exists and user has access
+        help_assistant = await HelpAssistantController.get_help_assistant(assistant_id, db)
+        if help_assistant.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to access this assistant")
+
+        # Create new chat
+        chat_service = ChatService(db)
+        chat = await chat_service.create_chat(assistant_id, current_user.id)
+
+        # Add welcome message
+        welcome_message = f"Hello! I'm {help_assistant.operator_name} from {help_assistant.name}. {help_assistant.mission} How can I help you today?"
+        await chat_service.add_message(
+            chat_id=chat.id,
+            content=welcome_message,
+            emitter=EmitterType.ASSISTANT
+        )
+
+        return {
+            "chat_id": chat.id,
+            "assistant": {
+                "id": help_assistant.id,
+                "name": help_assistant.name,
+                "operator_name": help_assistant.operator_name,
+                "operator_pic": help_assistant.operator_pic,
+                "mission": help_assistant.mission
+            },
+            "messages": [{
+                "content": welcome_message,
+                "emitter": EmitterType.ASSISTANT,
+                "created_at": chat.created_at
+            }]
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to initialize chat: {str(e)}"
+        )
 

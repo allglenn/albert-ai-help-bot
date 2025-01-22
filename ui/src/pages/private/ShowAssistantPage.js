@@ -20,7 +20,8 @@ import {
     Search as SearchIcon,
     Article as ArticleIcon,
     Star as StarIcon,
-    Description as DescriptionIcon
+    Description as DescriptionIcon,
+    Send as SendIcon
 } from '@mui/icons-material';
 
 // Add debounce hook at the top of the file
@@ -60,6 +61,10 @@ const ShowAssistantPage = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const debouncedSearchQuery = useDebounce(searchQuery, 500); // 500ms delay
+    const [chatOpen, setChatOpen] = useState(false);
+    const [chatMessage, setChatMessage] = useState('');
+    const [chatHistory, setChatHistory] = useState([]);
+    const [sendingMessage, setSendingMessage] = useState(false);
 
     const fetchFiles = async () => {
         try {
@@ -298,6 +303,77 @@ const ShowAssistantPage = () => {
         );
     };
 
+    // Add handler for sending messages
+    const handleSendMessage = async () => {
+        if (!chatMessage.trim()) return;
+
+        setSendingMessage(true);
+        try {
+            const response = await fetch(
+                `http://localhost:8000/api/v1/help-assistant/${id}/agent/chat`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: chatMessage })
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to send message');
+
+            const data = await response.json();
+
+            setChatHistory(prev => [...prev,
+            { type: 'user', content: chatMessage },
+            { type: 'assistant', content: data.response, sources: data.sources }
+            ]);
+            setChatMessage('');
+
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: 'Failed to send message: ' + err.message,
+                severity: 'error'
+            });
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
+    const handleStartChat = async () => {
+        try {
+            const response = await fetch(
+                `http://localhost:8000/api/v1/help-assistant/${id}/chat/init`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to initialize chat');
+
+            const data = await response.json();
+            setChatHistory(data.messages.map(msg => ({
+                type: msg.emitter.toLowerCase(),
+                content: msg.content,
+                timestamp: new Date(msg.created_at)
+            })));
+            setChatOpen(true);
+
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: 'Failed to start chat: ' + err.message,
+                severity: 'error'
+            });
+        }
+    };
+
     if (loading) {
         return (
             <PrivateLayout>
@@ -357,9 +433,8 @@ const ShowAssistantPage = () => {
                                     <Button
                                         variant="contained"
                                         startIcon={<ChatIcon />}
-                                        size="large"
-                                        onClick={() => navigate(`/chat/${assistant.id}`)}
-                                        sx={{ mt: 2 }}
+                                        onClick={() => setChatOpen(true)}
+                                        sx={{ width: '100%' }}
                                     >
                                         Start Chat
                                     </Button>
@@ -722,6 +797,113 @@ const ShowAssistantPage = () => {
                     <DialogActions>
                         <Button onClick={() => setModelsOpen(false)}>Close</Button>
                     </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={chatOpen}
+                    onClose={() => setChatOpen(false)}
+                    maxWidth="md"
+                    fullWidth
+                    sx={{
+                        '& .MuiDialog-paper': {
+                            height: '80vh',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }
+                    }}
+                >
+                    <DialogTitle sx={{ pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Avatar
+                                src={assistant.operator_pic}
+                                sx={{ width: 48, height: 48 }}
+                            />
+                            <Box>
+                                <Typography variant="h6" sx={{ mb: 0.5 }}>
+                                    {assistant.operator_name}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="subtitle2" color="primary">
+                                        {assistant.name}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mx: 1 }}>
+                                        •
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {assistant.mission}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                    </DialogTitle>
+
+                    <DialogContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        {/* Chat History */}
+                        <Box sx={{
+                            flexGrow: 1,
+                            overflowY: 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2,
+                            mb: 2
+                        }}>
+                            {chatHistory.map((message, index) => (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        alignSelf: message.type === 'user' ? 'flex-end' : 'flex-start',
+                                        maxWidth: '80%'
+                                    }}
+                                >
+                                    <Paper
+                                        elevation={1}
+                                        sx={{
+                                            p: 2,
+                                            backgroundColor: message.type === 'user' ? 'primary.main' : 'background.paper',
+                                            color: message.type === 'user' ? 'primary.contrastText' : 'text.primary'
+                                        }}
+                                    >
+                                        <Typography variant="body1">
+                                            {message.content}
+                                        </Typography>
+                                        {message.sources && (
+                                            <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    Sources: {message.sources.join(', ')}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </Paper>
+                                </Box>
+                            ))}
+                        </Box>
+
+                        {/* Message Input */}
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <TextField
+                                fullWidth
+                                placeholder="Type your message..."
+                                value={chatMessage}
+                                onChange={(e) => setChatMessage(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                                multiline
+                                maxRows={4}
+                                disabled={sendingMessage}
+                            />
+                            <IconButton
+                                color="primary"
+                                onClick={handleSendMessage}
+                                disabled={sendingMessage || !chatMessage.trim()}
+                                sx={{ alignSelf: 'flex-end' }}
+                            >
+                                {sendingMessage ? (
+                                    <CircularProgress size={24} />
+                                ) : (
+                                    <SendIcon />
+                                )}
+                            </IconButton>
+                        </Box>
+                    </DialogContent>
                 </Dialog>
 
                 <Snackbar
