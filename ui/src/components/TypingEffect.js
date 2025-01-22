@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Typography } from '@mui/material';
 
-const TypingEffect = ({ text, speed = 30 }) => {
+const TypingEffect = ({ text, speed = 20 }) => {
     const [displayedText, setDisplayedText] = useState('');
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
         if (currentIndex < text.length) {
             const timer = setTimeout(() => {
-                setDisplayedText(prev => prev + text[currentIndex]);
-                setCurrentIndex(prev => prev + 1);
+                const charsToAdd = text.length > 100 ? 3 : 1;
+                const nextIndex = Math.min(currentIndex + charsToAdd, text.length);
+                setDisplayedText(text.slice(0, nextIndex));
+                setCurrentIndex(nextIndex);
             }, speed);
 
             return () => clearTimeout(timer);
@@ -23,7 +25,7 @@ const TypingEffect = ({ text, speed = 30 }) => {
     }, [text]);
 
     return (
-        <Typography variant="body1">
+        <Typography component="span">
             {displayedText}
         </Typography>
     );
