@@ -30,15 +30,7 @@ router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 @router.get("/tones", response_model=Dict[str, str])
 async def get_available_tones():
     """Get all available assistant tones with descriptions in French"""
-    return {
-        ToneType.PROFESSIONAL: "Formel et professionnel",
-        ToneType.FRIENDLY: "Chaleureux et accessible",
-        ToneType.CASUAL: "Décontracté et informel",
-        ToneType.EMPATHETIC: "Compréhensif et compatissant",
-        ToneType.TECHNICAL: "Précis et technique",
-        ToneType.EDUCATIONAL: "Pédagogique et instructif",
-        ToneType.HUMOROUS: "Léger et humoristique"
-    }
+    return ToneType.get_all_descriptions('fr')
 
 @router.post("/", response_model=HelpAssistantResponse)
 async def create_help_assistant(

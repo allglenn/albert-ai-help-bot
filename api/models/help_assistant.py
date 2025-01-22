@@ -1,5 +1,5 @@
 from pydantic import BaseModel, validator
-from typing import List, Optional
+from typing import List, Optional, Dict
 from enum import Enum
 import random
 import json
@@ -25,6 +25,36 @@ class ToneType(str, Enum):
     EDUCATIONAL = "EDUCATIONAL"  # Teaching-oriented
     HUMOROUS = "HUMOROUS"       # Light and funny
 
+    @classmethod
+    def get_description(cls, tone: str, language: str = 'fr') -> str:
+        """Get the description of a tone in the specified language"""
+        descriptions = {
+            'fr': {
+                cls.PROFESSIONAL: "Formel et professionnel",
+                cls.FRIENDLY: "Chaleureux et accessible",
+                cls.CASUAL: "Décontracté et informel",
+                cls.EMPATHETIC: "Compréhensif et compatissant",
+                cls.TECHNICAL: "Précis et technique",
+                cls.EDUCATIONAL: "Pédagogique et instructif",
+                cls.HUMOROUS: "Léger et humoristique"
+            },
+            'en': {
+                cls.PROFESSIONAL: "Formal and business-like",
+                cls.FRIENDLY: "Warm and approachable",
+                cls.CASUAL: "Relaxed and informal",
+                cls.EMPATHETIC: "Understanding and compassionate",
+                cls.TECHNICAL: "Precise and technical",
+                cls.EDUCATIONAL: "Teaching-oriented",
+                cls.HUMOROUS: "Light and funny"
+            }
+        }
+        return descriptions.get(language, descriptions['en']).get(tone, "Unknown tone")
+
+    @classmethod
+    def get_all_descriptions(cls, language: str = 'fr') -> Dict[str, str]:
+        """Get all tone descriptions in the specified language"""
+        return {tone: cls.get_description(tone, language) for tone in cls}
+
 class HelpAssistantBase(BaseModel):
     name: str
     url: str
@@ -32,15 +62,13 @@ class HelpAssistantBase(BaseModel):
     description: Optional[str] = None
     authorizations: List[Authorization] = []
     operator_name: str
-    operator_pic: Optional[str] = None  # Made optional as we'll generate it if not provided
-    tone: ToneType = ToneType.PROFESSIONAL  # Default to professional tone
+    operator_pic: Optional[str] = None
+    tone: ToneType = ToneType.PROFESSIONAL
 
     @validator('operator_pic', pre=True, always=True)
     def set_operator_pic(cls, v, values):
         if v is None:
-            # Randomly choose between men and women
             gender = random.choice(['men', 'women'])
-            # Random number between 0 and 99
             number = random.randint(0, 99)
             return f"https://randomuser.me/api/portraits/{gender}/{number}.jpg"
         return v

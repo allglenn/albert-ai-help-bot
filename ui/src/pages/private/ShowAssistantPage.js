@@ -23,6 +23,7 @@ import {
     Description as DescriptionIcon,
     Send as SendIcon
 } from '@mui/icons-material';
+import TypingEffect from '../../components/TypingEffect';
 
 // Add debounce hook at the top of the file
 const useDebounce = (value, delay) => {
@@ -387,8 +388,18 @@ const ShowAssistantPage = () => {
     };
 
     // Add function to get tone description
-    const getToneDescription = (toneValue) => {
-        return tones[toneValue] || toneValue;
+    const getToneDescription = (tone) => {
+        // You can fetch these from your API or store them client-side
+        const toneDescriptions = {
+            PROFESSIONAL: "Formel et professionnel",
+            FRIENDLY: "Chaleureux et accessible",
+            CASUAL: "Décontracté et informel",
+            EMPATHETIC: "Compréhensif et compatissant",
+            TECHNICAL: "Précis et technique",
+            EDUCATIONAL: "Pédagogique et instructif",
+            HUMOROUS: "Léger et humoristique"
+        };
+        return toneDescriptions[tone] || tone;
     };
 
     // Add useEffect to fetch tones
@@ -882,7 +893,6 @@ const ShowAssistantPage = () => {
                     </DialogTitle>
 
                     <DialogContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                        {/* Chat History */}
                         <Box sx={{
                             flexGrow: 1,
                             overflowY: 'auto',
@@ -907,9 +917,14 @@ const ShowAssistantPage = () => {
                                             color: message.type === 'user' ? 'primary.contrastText' : 'text.primary'
                                         }}
                                     >
-                                        <Typography variant="body1">
-                                            {message.content}
-                                        </Typography>
+                                        {message.type === 'assistant' ? (
+                                            <TypingEffect text={message.content} />
+                                        ) : (
+                                            <Typography variant="body1">
+                                                {message.content}
+                                            </Typography>
+                                        )}
+
                                         {message.sources && (
                                             <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                                                 <Typography variant="caption" color="text.secondary">
@@ -922,7 +937,6 @@ const ShowAssistantPage = () => {
                             ))}
                         </Box>
 
-                        {/* Message Input */}
                         <Box sx={{ display: 'flex', gap: 1 }}>
                             <TextField
                                 fullWidth
