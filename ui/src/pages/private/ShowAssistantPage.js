@@ -323,14 +323,15 @@ const ShowAssistantPage = () => {
                     body: JSON.stringify({ content: chatMessage })
                 }
             );
-
+           // console.log("--------Response:---------", response); // Debug log
             if (!response.ok) throw new Error('Failed to send message');
 
             const data = await response.json();
-
+            //console.log("--------Data:---------", data); // Debug log
+            const newMessage = data?.message?.content;
             setChatHistory(prev => [...prev,
             { type: 'user', content: chatMessage },
-            { type: 'assistant', content: data.response, sources: data.sources }
+                { type: 'assistant', content: newMessage, sources: data.sources }
             ]);
             setChatMessage('');
 

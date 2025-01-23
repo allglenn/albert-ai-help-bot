@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse
 import os
 from services.chat_service import ChatService
 from sqlalchemy import select
-from models.message import MessageCreate
+from models.message import MessageCreate, MessageResponse
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 
@@ -364,7 +364,7 @@ async def add_chat_message(
                 prompt=message.content,
                 context={
                     "system": system_context,
-                    "chat_history": formatted_history  # Pass the formatted history
+                    "chat_history": formatted_history
                 }
             )
         else:
@@ -385,8 +385,18 @@ async def add_chat_message(
             emitter=EmitterType.ASSISTANT
         )
         
+        # Convert to response model
+        message_response = MessageResponse(
+            id=assistant_message.id,
+            chat_id=assistant_message.chat_id,
+            content=assistant_message.content,
+            emitter=assistant_message.emitter,
+            created_at=assistant_message.created_at,
+            sources=assistant_message.sources
+        )
+        
         return {
-            "message": assistant_message,
+            "message": message_response,
             "chat_id": chat_id,
             "assistant": {
                 "id": help_assistant.id,

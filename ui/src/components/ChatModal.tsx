@@ -82,10 +82,10 @@ const ChatModal: React.FC<ChatModalProps> = ({
     if (!newMessage.trim() || !chatId) return;
 
     try {
-      // Store message before clearing input
       const messageContent = newMessage;
+      setLoading(true);
 
-      // Immediately add user message and clear input
+      // Add user message
       const userMessage: Message = {
         content: messageContent,
         emitter: "USER",
@@ -94,35 +94,38 @@ const ChatModal: React.FC<ChatModalProps> = ({
       setMessages((prev) => [...prev, userMessage]);
       setNewMessage("");
 
-      // Show loading state but don't block the UI
-      setLoading(true);
+      console.log("Current messages:", messages); // Debug log
 
-      console.log("Sending message to chat:", chatId); // Debug log
-
-      // Send message to API with correct endpoint and chat ID
+      // Send message to API
       const response = await apiClient.post(
-        `/help-assistant/${assistantId}/chat/${chatId}/message`, // Include chatId in URL
-        {
-          content: messageContent,
-        },
+        `/help-assistant/${assistantId}/chat/${chatId}/message`,
+        { content: messageContent },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
+      console.log("--------Full response:---------", response.data);
+
       // Add assistant response
-      if (response.data.message) {
+      if (response.data?.message) {
         const assistantMessage: Message = {
           content: response.data.message.content,
           emitter: "ASSISTANT",
           created_at: response.data.message.created_at,
         };
-        setMessages((prev) => [...prev, assistantMessage]);
+        console.log("New assistant message:", assistantMessage);
+
+        // Update messages with new state function
+        setMessages((currentMessages) => {
+          console.log("Current messages before update:", currentMessages);
+          const newMessages = [...currentMessages, assistantMessage];
+          console.log("New messages after update:", newMessages);
+          return newMessages;
+        });
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      console.error("ChatId:", chatId); // Debug log
-      // Optionally show error to user
     } finally {
       setLoading(false);
     }
@@ -171,35 +174,42 @@ const ChatModal: React.FC<ChatModalProps> = ({
               p: 2,
             }}
           >
-            {messages.map((message, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: "flex",
-                  justifyContent:
-                    message.emitter === "USER" ? "flex-end" : "flex-start",
-                  mb: 2,
-                }}
-              >
+            {messages.map((message, index) => {
+              console.log("Rendering message:", message); // Debug log
+              return (
                 <Box
+                  key={index}
                   sx={{
-                    maxWidth: "70%",
-                    backgroundColor:
-                      message.emitter === "USER" ? "primary.main" : "grey.100",
-                    color:
-                      message.emitter === "USER" ? "white" : "text.primary",
-                    borderRadius: 2,
-                    p: 2,
+                    display: "flex",
+                    justifyContent:
+                      message.emitter === "USER" ? "flex-end" : "flex-start",
+                    mb: 2,
                   }}
                 >
-                  {message.emitter === "ASSISTANT" ? (
-                    <TypingEffect text={message.content} />
-                  ) : (
-                    <Typography>{message.content}</Typography>
-                  )}
+                  <Box
+                    sx={{
+                      maxWidth: "70%",
+                      backgroundColor:
+                        message.emitter === "USER"
+                          ? "primary.main"
+                          : "grey.100",
+                      color:
+                        message.emitter === "USER" ? "white" : "text.primary",
+                      borderRadius: 2,
+                      p: 2,
+                    }}
+                  >
+                    {message.emitter === "ASSISTANT" ? (
+                      <TypingEffect text={message.content} speed={20} />
+                    ) : (
+                      <Typography style={{ whiteSpace: "pre-wrap" }}>
+                        {message.content}
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              );
+            })}
             <div ref={messagesEndRef} />
           </Box>
 
