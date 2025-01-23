@@ -157,7 +157,7 @@ class AlbertAIService:
             else:
                 raise ValueError(f"Search failed with status {response.status_code}: {response.text}")
 
-    async def chat_with_context(self, collection_id: str, prompt: str) -> Dict[str, Any]:
+    async def chat_with_context(self, collection_id: str, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Search collection for relevant chunks and use them to answer the prompt.
         
@@ -184,37 +184,40 @@ class AlbertAIService:
                 }
             )
             
-            results = search_results.json()
-            chunks = "\n\n\n".join([result["chunk"]["content"] for result in results["data"]])
-            sources = list({result["chunk"]["metadata"]["document_name"] for result in results["data"]})
-            
-            # Format prompt with context
+            chat_history = context.get("chat_history", "")
+            messages = []
+            # add system {"role": "system", "content": context.get("system", "")}
+            messages.append({"role": "system", "content": context.get("system", "")})
+            #a add history 
+            for message in chat_history:
+                messages.append({"role": message['role'] , "content": message['content']})
             prompt_template = "Réponds à la question suivante en te basant sur les documents ci-dessous : {prompt}\n\nDocuments :\n\n{chunks}"
-            context_prompt = prompt_template.format(prompt=prompt, chunks=chunks)
-            
-            # Get AI response
-            query_response = await client.post(
-                f"{self.base_url}/query",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "prompt": context_prompt,
-                    "model": self.llm_model
-                }
-            )
-            
-            if query_response.status_code != 200:
-                raise ValueError(f"Query failed with status {query_response.status_code}: {query_response.text}")
-            
-            response_data = query_response.json()
-            
-            return {
-                "response": response_data.get("text", ""),
-                "sources": sources,
-                "chunks": chunks
+            chunks = "\n\n\n".join([result["chunk"]["content"] for result in search_results.json()["data"]])
+            sources = set([result["chunk"]["metadata"]["document_name"] for result in search_results.json()["data"]])
+            prompt = prompt_template.format(prompt=prompt, chunks=chunks)
+            messages.append({"role": "user", "content": prompt})
+            data = {
+                "model": self.llm_model,
+                "messages": messages,
+                "stream": False,
+                "n": 1,
+                "temperature": 0.7,
+
             }
+            response = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json=data
+            )
+            if response.status_code != 200:
+                print(f"Error: {response.status_code} - {response.text}")
+                raise ValueError(f"Request failed with status {response.status_code}")
+            else:
+                print("request worked")
+                print(response.json())
+            return response.json()
+            
+          
         
 
     async def rephrase_with_tone(self, message: str, tone: str) -> str:

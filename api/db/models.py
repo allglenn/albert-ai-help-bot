@@ -41,6 +41,7 @@ class HelpAssistant(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     message = Column(String)
     response = Column(String)
+    tone = Column(String, nullable=False, default="PROFESSIONAL") 
 
     # Update relationship definition
     collection = relationship("Collection", back_populates="help_assistant", uselist=False)

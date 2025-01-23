@@ -62,3 +62,9 @@ class ChatService:
         query = select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at)
         result = await self.db.execute(query)
         return result.scalars().all() 
+
+    async def get_chat(self, chat_id: int):
+        """Get a chat by its ID"""
+        query = select(Chat).where(Chat.id == chat_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()

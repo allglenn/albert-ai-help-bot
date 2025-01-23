@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from db.database import get_db
 from models import (
     HelpAssistant, 
@@ -24,6 +24,7 @@ from fastapi.responses import FileResponse
 import os
 from services.chat_service import ChatService
 from sqlalchemy import select
+from models.message import MessageCreate
 
 router = APIRouter(prefix="/help-assistant", tags=["help-assistant"])
 
@@ -295,11 +296,111 @@ async def init_chat(
         }
 
     except HTTPException:
-        raise
+        raise 
     except Exception as e:
         print(f"Error initializing chat: {str(e)}")  # Debug print
         raise HTTPException(
             status_code=500,
             detail=f"Failed to initialize chat: {str(e)}"
+        )
+
+@router.post("/{assistant_id}/chat/{chat_id}/message", response_model=Dict)
+async def add_chat_message(
+    assistant_id: int,
+    chat_id: int,
+    message: MessageCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Add a message to the chat and get AI response with context"""
+    try:
+        # Verify user has access to this chat
+        chat_service = ChatService(db)
+        chat = await chat_service.get_chat(chat_id)
+        
+        if not chat or chat.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to access this chat")
+            
+        # Get the assistant
+        help_assistant = await HelpAssistantController.get_help_assistant(assistant_id, db)
+        
+        # Save user message
+        await chat_service.add_message(
+            chat_id=chat_id,
+            content=message.content,
+            emitter=EmitterType.USER
+        )
+        
+        # Get chat history for context
+        chat_history = await chat_service.get_chat_messages(chat_id)
+        
+        # Format chat history as a list of dictionaries
+        formatted_history = [
+            {"role": "assistant" if msg.emitter == EmitterType.ASSISTANT else "user", "content": msg.content}
+            for msg in chat_history
+        ]
+        
+        # Build system context with assistant details
+        system_context = (
+            f"Tu es {help_assistant.operator_name}, un assistant virtuel de {help_assistant.name}. "
+            f"Ta mission est {help_assistant.mission}. "
+            f"Ton ton de communication est {help_assistant.tone or 'professionnel'}. "
+            "Réponds toujours en français de manière naturelle et cohérente avec ton rôle."
+        )
+        
+        # Get collection for knowledge base context
+        collection_service = CollectionService(db)
+        collection: Optional[Collection] = await collection_service.get_by_help_assistant(assistant_id)
+        
+        # Initialize tools
+        ai_service = AlbertAIService()
+        collection_tool = CollectionTool(ai_service)
+        
+        # Get response using chat_with_context
+        if collection:
+            print(f"Using collection: {collection.albert_id}")  # Debug print
+            response = await collection_tool.chat_with_context(
+                collection_id=collection.albert_id,
+                prompt=message.content,
+                context={
+                    "system": system_context,
+                    "chat_history": formatted_history  # Pass the formatted history
+                }
+            )
+        else:
+            print("No collection found, using fallback")  # Debug print
+            # Fallback if no collection exists
+            response = await ai_service.chat_completion(
+                messages=[
+                    {"role": "system", "content": system_context},
+                    {"role": "user", "content": formatted_history + "\n\nUser: " + message.content}
+                ]
+            )
+        print(f"AI response: {response}")  # Debug print
+
+        # Save assistant response
+        assistant_message = await chat_service.add_message(
+            chat_id=chat_id,
+            content=response['choices'][0]['message']['content'],
+            emitter=EmitterType.ASSISTANT
+        )
+        
+        return {
+            "message": assistant_message,
+            "chat_id": chat_id,
+            "assistant": {
+                "id": help_assistant.id,
+                "name": help_assistant.name,
+                "operator_name": help_assistant.operator_name
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in chat message: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to process chat message: {str(e)}"
         )
 

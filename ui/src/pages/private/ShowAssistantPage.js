@@ -313,14 +313,14 @@ const ShowAssistantPage = () => {
         setSendingMessage(true);
         try {
             const response = await fetch(
-                `http://localhost:8000/api/v1/help-assistant/${id}/agent/chat`,
+                `http://localhost:8000/api/v1/help-assistant/${id}/chat/${chatId}/message`,
                 {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: chatMessage })
+                    body: JSON.stringify({ content: chatMessage })
                 }
             );
 

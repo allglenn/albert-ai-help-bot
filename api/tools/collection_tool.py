@@ -25,7 +25,7 @@ class CollectionTool:
             k=k
         )
 
-    async def chat_with_context(self, collection_id: str, prompt: str) -> Dict[str, Any]:
+    async def chat_with_context(self, collection_id: str, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Search collection and use relevant chunks to answer the prompt.
         
@@ -38,5 +38,6 @@ class CollectionTool:
         """
         return await self.albert_service.chat_with_context(
             collection_id=collection_id,
-            prompt=prompt
+            prompt=prompt,
+            context=context
         ) 
