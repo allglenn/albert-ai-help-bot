@@ -1,238 +1,170 @@
 # Albert AI Integration Demo
 
-## Table of Contents
-- [Albert AI Integration Demo](#albert-ai-integration-demo)
-  - [Table of Contents](#table-of-contents)
-  - [About the Project](#about-the-project)
-  - [Technical Stack](#technical-stack)
-    - [Backend (API)](#backend-api)
-    - [Frontend (UI)](#frontend-ui)
-    - [Infrastructure \& Monitoring](#infrastructure--monitoring)
-  - [Features](#features)
-    - [Core Features](#core-features)
-      - [Authentication](#authentication)
-      - [User Management](#user-management)
-      - [Database](#database)
-    - [Monitoring Features](#monitoring-features)
-      - [Metrics Collection](#metrics-collection)
-      - [Dashboard Panels](#dashboard-panels)
-      - [Monitoring Setup](#monitoring-setup)
-      - [Test Endpoints](#test-endpoints)
-  - [Project Structure](#project-structure)
-  - [Getting Started](#getting-started)
-  - [Development](#development)
-    - [Environment Setup](#environment-setup)
-    - [Development Features](#development-features)
-    - [Configuration Files](#configuration-files)
-  - [API Documentation](#api-documentation)
-    - [Authentication Endpoints](#authentication-endpoints)
-    - [User Endpoints](#user-endpoints)
-  - [Security](#security)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Acknowledgments](#acknowledgments)
+<div align="center">
 
-## About the Project
+![Infrastructure Diagram](infra.png)
 
-This project serves as a demonstration of integrating Albert AI, a French government initiative that provides state agencies access to open-source AI models. Albert AI is part of France's strategy to democratize AI usage within public services while maintaining data sovereignty and promoting open-source solutions.
+*Modern microservices architecture with AI integration*
 
-## Technical Stack
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](https://prometheus.io/)
 
-### Backend (API)
-- **FastAPI**: Modern, fast (high-performance) web framework for building APIs with Python
-- **Pydantic**: Data validation using Python type annotations
-- **SQLAlchemy**: SQL toolkit and ORM for database operations
-- **PostgreSQL**: Robust, open-source database
-- **JWT**: JSON Web Tokens for secure authentication
-- **Uvicorn**: Lightning-fast ASGI server implementation
-- **Python 3.11**: Latest stable version with improved performance
+</div>
 
-### Frontend (UI)
-- **React 18**: JavaScript library for building user interfaces
-- **React Hooks**: For state management and side effects
-- **Fetch API**: For making HTTP requests to the backend
+## 📑 Table of Contents
+- [Overview](#-overview)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Getting Started](#-getting-started)
+- [Development](#-development)
+- [Monitoring](#-monitoring)
+- [Security](#-security)
+- [Contributing](#-contributing)
 
-### Infrastructure & Monitoring
-- **Docker**: Containerization of all services
-- **Docker Compose**: Multi-container orchestration
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Metrics visualization and dashboards
-- **Hot Reloading**: Development environment support
+## 🎯 Overview
 
-## Features
+A demonstration of Albert AI integration - a French government initiative providing state agencies with access to open-source AI models. This project showcases AI-powered assistance for administrative procedures while maintaining data sovereignty.
 
-### Core Features
-#### Authentication
-- Secure JWT-based authentication
-- Token blacklisting for logout functionality
-- Password hashing with bcrypt
-- Protected routes with dependency injection
-- Automatic token expiration
+### Key Benefits
+- 🤖 Intelligent administrative assistance
+- 🔒 Secure data handling
+- 📊 Comprehensive monitoring
+- 🚀 Modern tech stack
 
-#### User Management
-- User registration with email validation
-- Secure password storage
-- User profile retrieval
-- Email uniqueness enforcement
-- Active/inactive user status
+## 💫 Features
 
-#### Database
-- PostgreSQL integration
-- Async database operations
-- Migration support
-- Token blacklist management
-- Automatic cleanup of expired tokens
+### Core Capabilities
+- **AI Chat Interface**
+  - Real-time conversations
+  - Context-aware responses
+  - Multi-language support
 
-### Monitoring Features
+- **Document Processing**
+  - Smart document analysis
+  - Information extraction
+  - Secure file handling
 
-The application includes comprehensive monitoring using Prometheus and Grafana:
+- **User Management**
+  - JWT authentication
+  - Role-based access
+  - Session management
 
-![Monitoring Dashboard](monitoringscren.png)
+## 🏗 Architecture
 
-#### Metrics Collection
-- **Request Metrics**
-  - Total request count
-  - Request rate by endpoint
-  - Success/Error rates
-  - Status code distribution
-  - Response times
+### Technology Stack
 
-- **System Metrics**
-  - CPU usage
-  - Memory consumption
+#### Backend (FastAPI)
+- FastAPI framework
+- PostgreSQL database
+- SQLAlchemy ORM
+- JWT authentication
+- Async operations
 
-#### Dashboard Panels
-1. **Total Requests**: Counter showing all API requests
-2. **Success Rate**: Gauge showing percentage of successful requests
-3. **Status Code Distribution**: Pie chart of response status codes
-4. **Request Rate**: Time series of requests per endpoint
-5. **Response Time**: Average response time by endpoint
-6. **System Resources**: CPU and Memory usage trends
+#### Frontend (React)
+- React 18 with hooks
+- Material-UI components
+- TypeScript
+- Real-time updates
+- Responsive design
 
-#### Monitoring Setup
+#### Infrastructure
+- Docker containerization
+- Nginx reverse proxy
+- Redis caching
+- Prometheus metrics
+- Grafana dashboards
+
+### System Components
+
+```mermaid
+graph TD
+    A[Client] --> B[Nginx Proxy]
+    B --> C[React Frontend]
+    B --> D[FastAPI Backend]
+    D --> E[PostgreSQL]
+    D --> F[Albert AI API]
+    G[Prometheus] --> D
+    G --> H[Grafana]
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (development)
+- Python 3.11+ (development)
+- Albert AI API credentials
+
+### Quick Start
 ```bash
-# Start the full stack including monitoring
+# Clone repository
+git clone[ https://github.com/allglenn/albert-ai-demo.git]
+cd albert-ai-demo
+
+# Configure environment
+cp api/.env.example api/.env
+# Edit api/.env with your credentials
+
+# Launch services
 docker-compose up -d
 
-# Access monitoring interfaces
+# Access applications
+Frontend: http://localhost:3000
+API Docs: http://localhost:8000/docs
+Monitoring: http://localhost:3001
+```
+
+## 📊 Monitoring
+
+Our monitoring solution provides comprehensive insights:
+
+![Monitoring Dashboard](monitoring-dashboard.png)
+
+### Key Metrics
+- API performance
+- System resources
+- Business metrics
+- Error tracking
+
+### Access Points
+```bash
 Grafana: http://localhost:3001 (admin/admin)
 Prometheus: http://localhost:9090
+Raw Metrics: http://localhost:8000/metrics
 ```
 
-#### Test Endpoints
-```bash
-# Generate sample metrics
-curl http://localhost:8000/api/v1/auth/test-metrics
+## 🔒 Security
 
-# View raw metrics
-curl http://localhost:8000/metrics
-```
+- JWT-based authentication
+- CORS protection
+- Rate limiting
+- Input validation
+- Network isolation
+- Container security
 
-## Project Structure
-```
-project/
-├── api/                      # FastAPI backend
-│   ├── controllers/          # Business logic
-│   ├── models/              # Pydantic models
-│   ├── services/            # Service layer
-│   │   └── monitoring.py    # Metrics collection service
-│   ├── views/               # API endpoints
-│   ├── middleware/          # Middleware components
-│   │   └── error_handler.py # Global error handling
-│   ├── db/                  # Database models and config
-│   ├── utils/               # Utility functions
-│   │   └── exceptions.py    # Custom exceptions
-│   └── config.py            # Application configuration
-├── ui/                      # React frontend
-├── prometheus/              # Prometheus configuration
-│   └── prometheus.yml       # Scraping configuration
-├── grafana/                 # Grafana configuration
-│   └── provisioning/        # Auto-provisioning
-│       ├── dashboards/      # Dashboard definitions
-│       │   ├── default.yml  # Dashboard provider config
-│       │   └── fastapi.json # FastAPI dashboard
-│       └── datasources/     # Data source definitions
-│           └── prometheus.yml # Prometheus data source
-└── docker-compose.yml       # Docker composition
-```
+## 🤝 Contributing
 
-## Getting Started
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-1. Clone the repository:
-```bash
-git clone https://github.com/allglenn/albert-ai-help-bot.git
-cd albert-ai-help-bot
-```
+## 📄 License
 
-2. Create a .env file (optional):
-```bash
-cp .env.example .env
-# Edit .env with your Albert AI credentials
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-3. Start the application:
-```bash
-docker-compose up --build
-```
+## 🙏 Acknowledgments
 
-4. Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
+- Albert AI team for the API infrastructure
+- French government's digital services
+- Open-source community contributors
 
-## Development
+---
 
-### Environment Setup
-
-Key environment variables (see .env.example for full list):
-- `DATABASE_URL`: PostgreSQL connection string
-- `SECRET_KEY`: JWT signing key
-- `ALBERT_AI_API_KEY`: API key for Albert AI services
-- `DEBUG`: Enable/disable debug mode
-
-### Development Features
-- Frontend hot reloading
-- Backend auto-reload
-- Docker volume persistence
-- Database persistence
-
-### Configuration Files
-- `prometheus/prometheus.yml`: Prometheus scraping configuration
-- `grafana/provisioning/`: Grafana dashboards and data sources
-- `api/services/monitoring.py`: Metrics collection setup
-- `.env.example`: Environment variable template
-
-## API Documentation
-
-### Authentication Endpoints
-- `POST /api/v1/auth/login`: JSON login endpoint
-- `POST /api/v1/auth/token`: Form-based login endpoint
-- `POST /api/v1/auth/logout`: Logout and invalidate token
-
-### User Endpoints
-- `POST /api/v1/users/`: Create new user
-- `GET /api/v1/users/me`: Get current user profile
-- `GET /api/v1/users/{user_id}`: Get user by ID
-
-## Security
-- Password hashing with bcrypt
-- JWT token-based authentication
-- Token blacklisting for secure logout
-- Database-level email uniqueness
-- Protected API endpoints
-- CORS configuration
-- Environment variable separation
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## Acknowledgments
-
-- Albert AI team for providing the API infrastructure
-- French government's digital services for promoting open-source AI solutions
+<div align="center">
+Made with ❤️ by the Albert AI Integration Team
+</div>
 
